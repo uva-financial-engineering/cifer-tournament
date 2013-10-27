@@ -4,7 +4,6 @@ from flask.ext.login import current_user
 from app import app, db, lm
 from models import User, Stock
 
-
 @lm.user_loader
 def load_user(id):
     return User.query.get(int(id))
