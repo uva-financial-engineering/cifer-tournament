@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<div id="wrap">
+  <form method=post>
+    <table>
+      <tbody>
+        <tr>
+          <td>Email:</td>
+          <td><input type=text name=email autofocus></td>
+        </tr>
+        <tr>
+          <td>Password: </td>
+          <td><input type=text name=password></td>
+        </tr>
+        <tr>
+          <td>&nbsp;</td>
+          <td><button type=submit name=action value="login">Sign In </button></td>
+        </tr>
+      </tbody>
+    </table>
+  </form>
+</div>
+{% endblock %}

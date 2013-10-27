@@ -1,6 +1,6 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, g, request
 from flask.ext.sqlalchemy import SQLAlchemy
-from flask.ext.login import LoginManager
+from flask.ext.login import LoginManager, current_user
 
 
 # Config
@@ -51,11 +51,31 @@ class Stock(db.Model):
 
 # Views
 
-@app.route("/")
-def index():
-    stocks = Stock.query.all()
+@lm.user_loader
+def load_user(id):
+    return User.query.get(int(id))
 
-    return render_template("index.html", stocks=stocks)
+@app.before_request
+def before_request():
+    g.user = current_user
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if request.method == "POST":
+        if request.form["action"] == "login":
+            if request.form["email"] != "t":
+                stocks = Stock.query.all()
+                return render_template("index.html", stocks=stocks)
+            else:
+                return render_template("login.html")
+        else:
+            return render_template("index.html")
+    else:
+        if g.user is not None and g.user.is_authenticated():
+            stocks = Stock.query.all()
+            return render_template("index.html", stocks=stocks)
+        else:
+            return render_template("login.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
