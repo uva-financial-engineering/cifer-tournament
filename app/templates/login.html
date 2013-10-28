@@ -3,19 +3,40 @@
 {% block body %}
 <div id="wrap">
   <form method=post>
+    {{ logform.hidden_tag() }}
     <table>
       <tbody>
         <tr>
-          <td>Email:</td>
-          <td><input type=text name=email autofocus></td>
+          <td>{{ logform.email.label }}</td>
+          <td>{{ logform.email }}</td>
         </tr>
         <tr>
-          <td>Password: </td>
-          <td><input type=text name=password></td>
+          <td>{{ logform.password.label }}</td>
+          <td>{{ logform.password }}</td>
         </tr>
         <tr>
           <td>&nbsp;</td>
-          <td><button type=submit name=action value="login">Sign In </button></td>
+          <td><button type=submit name=action value=login>Sign In</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </form>
+
+  <form method=post>
+    {{ regform.hidden_tag() }}
+    <table>
+      <tbody>
+        <tr>
+          <td>{{ regform.email.label }}</td>
+          <td>{{ regform.email }}</td>
+        </tr>
+        <tr>
+          <td>{{ regform.password.label }}</td>
+          <td>{{ regform.password }}</td>
+        </tr>
+        <tr>
+          <td>&nbsp;</td>
+          <td><button type=submit name=action value=register>Register</button></td>
         </tr>
       </tbody>
     </table>

@@ -1,3 +1,5 @@
+from werkzeug import generate_password_hash, check_password_hash
+
 from app import db
 
 class User(db.Model):
@@ -7,17 +9,15 @@ class User(db.Model):
     email = db.Column(db.Text, unique=True)
     password = db.Column(db.Text)
 
-    def is_authenticated(self):
-        return True
+    def __init__(self, email, password):
+        self.email = email.lower()
+        self.set_password(password)
 
-    def is_active(self):
-        return True
+    def set_password(self, plaintext):
+        self.password = generate_password_hash(plaintext)
 
-    def is_anonymous(self):
-        return False
-
-    def get_id(self):
-        return unicode(self.id)
+    def check_password(self, plaintext):
+        return check_password_hash(self.password, plaintext)
 
 class Stock(db.Model):
     __tablename__ = "stocks"
