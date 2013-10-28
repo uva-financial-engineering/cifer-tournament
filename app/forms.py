@@ -5,8 +5,11 @@ from app import db, app
 from models import User
 
 class RegistrationForm(Form):
-    email = TextField("Email",  [validators.Required("Please enter your email address."), validators.Email("Please enter your email address.")])
-    password = PasswordField('Password', [validators.Required("Please enter a password.")])
+    email = TextField("Email", [
+        validators.Required("Please enter your email address."),
+        validators.Email("Please enter your email address.")])
+    password = PasswordField("Password", [
+        validators.Required("Please enter a password.")])
     submit = SubmitField("Create account")
 
     def __init__(self, *args, **kwargs):
@@ -23,8 +26,11 @@ class RegistrationForm(Form):
             return True
 
 class LoginForm(Form):
-    email = TextField("Email",  [validators.Required("Please enter your email address."), validators.Email("Please enter your email address.")])
-    password = PasswordField('Password', [validators.Required("Please enter a password.")])
+    email = TextField("Email", [
+        validators.Required("Please enter your email address."),
+        validators.Email("Please enter your email address.")])
+    password = PasswordField("Password", [
+        validators.Required("Please enter a password.")])
     submit = SubmitField("Create account")
 
     def __init__(self, *args, **kwargs):

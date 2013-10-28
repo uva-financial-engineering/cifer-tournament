@@ -3,16 +3,16 @@
 {% block body %}
 <div id="wrap">
   <form method=post>
-    {{ logform.hidden_tag() }}
+    {{ loginform.hidden_tag() }}
     <table>
       <tbody>
         <tr>
-          <td>{{ logform.email.label }}</td>
-          <td>{{ logform.email }}</td>
+          <td>{{ loginform.email.label }}</td>
+          <td>{{ loginform.email }}</td>
         </tr>
         <tr>
-          <td>{{ logform.password.label }}</td>
-          <td>{{ logform.password }}</td>
+          <td>{{ loginform.password.label }}</td>
+          <td>{{ loginform.password }}</td>
         </tr>
         <tr>
           <td>&nbsp;</td>
@@ -23,16 +23,16 @@
   </form>
 
   <form method=post>
-    {{ regform.hidden_tag() }}
+    {{ registrationform.hidden_tag() }}
     <table>
       <tbody>
         <tr>
-          <td>{{ regform.email.label }}</td>
-          <td>{{ regform.email }}</td>
+          <td>{{ registrationform.email.label }}</td>
+          <td>{{ registrationform.email }}</td>
         </tr>
         <tr>
-          <td>{{ regform.password.label }}</td>
-          <td>{{ regform.password }}</td>
+          <td>{{ registrationform.password.label }}</td>
+          <td>{{ registrationform.password }}</td>
         </tr>
         <tr>
           <td>&nbsp;</td>
