@@ -3,16 +3,16 @@
 {% block body %}
 <div id="wrap">
   <form method=post>
-    {{ loginform.hidden_tag() }}
+    {{ loginform.csrf_token_no_id | safe }}
     <table>
       <tbody>
         <tr>
-          <td>{{ loginform.email.label }}</td>
-          <td>{{ loginform.email }}</td>
+          <td>{{ loginform.login_email.label }}</td>
+          <td>{{ loginform.login_email }}</td>
         </tr>
         <tr>
-          <td>{{ loginform.password.label }}</td>
-          <td>{{ loginform.password }}</td>
+          <td>{{ loginform.login_password.label }}</td>
+          <td>{{ loginform.login_password }}</td>
         </tr>
         <tr>
           <td>&nbsp;</td>
@@ -23,16 +23,16 @@
   </form>
 
   <form method=post>
-    {{ registrationform.hidden_tag() }}
+    {{ regform.csrf_token_no_id | safe }}
     <table>
       <tbody>
         <tr>
-          <td>{{ registrationform.email.label }}</td>
-          <td>{{ registrationform.email }}</td>
+          <td>{{ regform.reg_email.label }}</td>
+          <td>{{ regform.reg_email }}</td>
         </tr>
         <tr>
-          <td>{{ registrationform.password.label }}</td>
-          <td>{{ registrationform.password }}</td>
+          <td>{{ regform.reg_password.label }}</td>
+          <td>{{ regform.reg_password }}</td>
         </tr>
         <tr>
           <td>&nbsp;</td>

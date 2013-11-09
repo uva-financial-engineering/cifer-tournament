@@ -4,11 +4,11 @@ from wtforms import TextField, TextAreaField, SubmitField, validators, Validatio
 from app import db, app
 from models import User
 
-class RegistrationForm(Form):
-    email = TextField("Email", [
+class RegForm(Form):
+    reg_email = TextField("Email", [
         validators.Required("Please enter your email address."),
         validators.Email("Please enter your email address.")])
-    password = PasswordField("Password", [
+    reg_password = PasswordField("Password", [
         validators.Required("Please enter a password.")])
     submit = SubmitField("Create account")
 
@@ -19,17 +19,17 @@ class RegistrationForm(Form):
         if not Form.validate(self):
             return False
 
-        if User.query.filter_by(email=self.email.data.lower()).first():
-            self.email.errors.append("That email is already taken")
+        if User.query.filter_by(email=self.reg_email.data.lower()).first():
+            self.reg_email.errors.append("That email is already taken")
             return False
         else:
             return True
 
 class LoginForm(Form):
-    email = TextField("Email", [
+    login_email = TextField("Email", [
         validators.Required("Please enter your email address."),
         validators.Email("Please enter your email address.")])
-    password = PasswordField("Password", [
+    login_password = PasswordField("Password", [
         validators.Required("Please enter a password.")])
     submit = SubmitField("Create account")
 
@@ -40,9 +40,9 @@ class LoginForm(Form):
         if not Form.validate(self):
             return False
 
-        user = User.query.filter_by(email = self.email.data.lower()).first()
-        if user and user.check_password(self.password.data):
+        user = User.query.filter_by(email = self.login_email.data.lower()).first()
+        if user and user.check_password(self.login_password.data):
             return True
         else:
-            self.email.errors.append("Invalid e-mail or password")
+            self.login_email.errors.append("Invalid e-mail or password")
             return False
