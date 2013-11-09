@@ -24,6 +24,3 @@ class Stock(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     symbol = db.Column(db.Text, unique=True)
-    name = db.Column(db.Text)
-    bid = db.Column(db.Numeric)
-    ask = db.Column(db.Numeric)
