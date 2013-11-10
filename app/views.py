@@ -1,4 +1,5 @@
 import os
+import time
 from decimal import Decimal
 
 from flask import render_template, g, request, session, send_from_directory
@@ -87,3 +88,11 @@ def index():
 def favicon():
     return send_from_directory(os.path.join(app.root_path, "static"),
        "favicon.ico", mimetype="image/vnd.microsoft.icon")
+
+@app.before_request
+def before_request():
+    g.start = time.time()
+
+@app.teardown_request
+def teardown_request(exception=None):
+    app.logger.debug("Time: " + str(time.time() - g.start))
