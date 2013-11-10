@@ -52,3 +52,16 @@ class BasketItem(db.Model):
     is_call = db.Column(db.Boolean)
     strike = db.Column(db.Numeric)
     qty = db.Column(db.Numeric)
+
+class Terror(db.Model):
+    __tablename__ = "terrors"
+
+    def __init__(self, date, user_id, terror):
+        self.date = date
+        self.user_id = user_id
+        self.terror = terror
+
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.DateTime)
+    user_id = db.Column(db.Integer)
+    terror = db.Column(db.Numeric)

@@ -1,11 +1,14 @@
+from __future__ import division
+
 import os
+import math
 import time
 from decimal import Decimal
 
 from flask import render_template, g, request, session, send_from_directory
 
 from app import app, db
-from models import User, Stock, StockPrice, BasketItem
+from models import User, Stock, StockPrice, BasketItem, Terror
 from forms import RegForm, LoginForm, TradeForm
 
 @app.route("/", methods=["GET", "POST"])
@@ -83,6 +86,34 @@ def index():
             return index()
 
         return render_template("login.html", regform=regform, loginform=loginform)
+
+@app.route("/midnight")
+def midnight():
+    # Add interest to cash, then record it
+    portfolio_values = dict()
+    for user in User.query.all():
+        user.cash *= Decimal(math.exp(1 / 36500))
+        portfolio_values[user.id] = user.cash
+
+    # Add value of basket items
+    for basket_item in BasketItem.query.all():
+        portfolio_values[basket_item.user_id] += basket_item.qty * StockPrice.query.filter_by(stock_id=basket_item.stock_id, date="2013-08-19").first().bid
+
+    # Store tracking errors
+    target = 50000000 * Decimal(math.exp(1 / 36500))
+    for user, value in portfolio_values.iteritems():
+        terror = target - value if value < target else (value - target) / 2
+        db.session.add(Terror("2013-08-19", user, terror))
+
+    db.session.commit()
+
+    return str(portfolio_values)
+
+    # with open("midnight.sql", "w") as f:
+    #     f.write(sql)
+
+    # os.system("PGPASSWORD=postgres psql -U postgres -d cifer -f midnight.sql")
+
 
 @app.route("/favicon.ico")
 def favicon():

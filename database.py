@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import sys
 
 users_sql = """DROP TABLE IF EXISTS users;
@@ -82,7 +83,18 @@ CREATE TABLE basket_items (
 if __name__ == "__main__":
 
     if len(sys.argv) < 3:
-        print("-- Usage: python database.py [options CSV file] [stock prices CSV file] > database.sql")
+        print("-- Usage: python database.py [options CSV file] [stock prices CSV file]")
+        exit(0)
+    elif len(sys.argv) > 3:
+        with open("database.sql", "w") as f:
+            f.write(users_sql +
+                transactions_sql +
+                terrors_sql +
+                basket_items_sql)
+
+        # Execute file
+
+        os.system("PGPASSWORD=postgres psql -U postgres -d cifer -f database.sql")
         exit(0)
 
     with open(sys.argv[1]) as f:
@@ -133,10 +145,17 @@ if __name__ == "__main__":
 
         options_sql += "('%s', %d, %s, %s, %s, %s), " % ("-".join([date[2], date[0], date[1]]), stocks[pieces[1]], "TRUE" if pieces[2] == "Call" else "FALSE", pieces[3], pieces[4], pieces[5])
 
-    print(users_sql)
-    print(transactions_sql)
-    print(terrors_sql)
-    print(basket_items_sql)
-    print(stocks_sql[:-2] + ";")
-    print(stock_prices_sql[:-2] + ";")
-    print(options_sql[:-2] + ";")
+    # Write to SQL file
+
+    with open("database.sql", "w") as f:
+        f.write(users_sql +
+            transactions_sql +
+            terrors_sql +
+            basket_items_sql +
+            stocks_sql[:-2] + ";" +
+            stock_prices_sql[:-2] + ";" +
+            options_sql[:-2] + ";")
+
+    # Execute file
+
+    os.system("PGPASSWORD=postgres psql -U postgres -d cifer -f database.sql")
