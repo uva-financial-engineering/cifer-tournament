@@ -51,7 +51,7 @@ class TradeForm(Form):
     stocks = Stock.query.all()
     trade_stock = SelectField("Symbol", [validators.InputRequired("Please choose a stock")], coerce=int, choices=[(s.id, s.symbol) for s in stocks])
     trade_qty = DecimalField("Quantity", [validators.InputRequired("Enter a quantity.")])
-    trade_position = RadioField("Action", [validators.InputRequired("Enter a position")], coerce=int, choices=[(0, "Buy"), (1, "Sell"), (2, "Short Sell")])
+    trade_position = RadioField("Action", [validators.InputRequired("Enter a position")], choices=[("buy", "Buy"), ("sell", "Sell")])
 
     def __init__(self, *args, **kwargs):
         Form.__init__(self, *args, **kwargs)

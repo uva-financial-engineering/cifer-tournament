@@ -29,26 +29,31 @@ def index():
             session.pop("user", None)
             return index()
         elif action == "trade" and tradeform.validate():
-            if tradeform.trade_position.data == 0: # Buy
+            # Get basket item (or create it if nonexistent)
+            basket_item = BasketItem.query.filter_by(user_id=session["user"], stock_id=tradeform.trade_stock.data).first()
+            if basket_item is None:
+                basket_item = BasketItem(session["user"], tradeform.trade_stock.data, True, 0, 0)
+                db.session.add(basket_item)
+
+            if tradeform.trade_position.data == "buy":
                 # Subtract from cash
                 user.cash -= Decimal(1.004) * tradeform.trade_qty.data * StockPrice.query.filter_by(stock_id=tradeform.trade_stock.data, date="2013-08-16").first().ask
 
                 # Add items to basket
-                basket_item = BasketItem.query.filter_by(user_id=session["user"], stock_id=tradeform.trade_stock.data).first()
-                if basket_item:
-                    basket_item.qty += tradeform.trade_qty.data
-                else:
-                    db.session.add(BasketItem(session["user"], tradeform.trade_stock.data, True, 0, tradeform.trade_qty.data))
-            else: # Sell
+                basket_item.qty += tradeform.trade_qty.data
+            else:
+                sell_qty = max(0, min(tradeform.trade_qty.data, basket_item.qty))
+                shortsell_qty = tradeform.trade_qty.data - sell_qty
+
                 # Add to cash
-                user.cash += Decimal(0.996) * tradeform.trade_qty.data * StockPrice.query.filter_by(stock_id=tradeform.trade_stock.data, date="2013-08-16").first().bid
+                user.cash += (Decimal(0.996) * sell_qty + Decimal(0.98) * shortsell_qty) * StockPrice.query.filter_by(stock_id=tradeform.trade_stock.data, date="2013-08-16").first().bid
 
                 # Remove items from basket
-                basket_item = BasketItem.query.filter_by(user_id=session["user"], stock_id=tradeform.trade_stock.data).first()
-                if basket_item.qty > tradeform.trade_qty.data:
-                    basket_item.qty -= tradeform.trade_qty.data
-                else:
-                    db.session.delete(basket_item)
+                basket_item.qty -= tradeform.trade_qty.data
+
+            # Remove basket item if quantity is zero
+            if basket_item.qty == 0:
+                db.session.delete(basket_item)
 
             # Save to database
             db.session.commit()
