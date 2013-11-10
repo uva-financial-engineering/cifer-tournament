@@ -42,11 +42,8 @@ def index():
                 # Add items to basket
                 basket_item.qty += tradeform.trade_qty.data
             else:
-                sell_qty = max(0, min(tradeform.trade_qty.data, basket_item.qty))
-                shortsell_qty = tradeform.trade_qty.data - sell_qty
-
                 # Add to cash
-                user.cash += (Decimal(0.996) * sell_qty + Decimal(0.99) * shortsell_qty) * StockPrice.query.filter_by(stock_id=tradeform.trade_stock.data, date="2013-08-16").first().bid
+                user.cash += Decimal(0.996 if basket_item.qty > 0 else 0.99) * tradeform.trade_qty.data * StockPrice.query.filter_by(stock_id=tradeform.trade_stock.data, date="2013-08-16").first().bid
 
                 # Remove items from basket
                 basket_item.qty -= tradeform.trade_qty.data
@@ -63,13 +60,13 @@ def index():
         for i in xrange(len(stocks)):
             # Add bid/ask data
             stocks[i].bid = StockPrice.query.filter_by(stock_id=i + 1, date="2013-08-16").first().bid
-            stocks[i].ask = StockPrice.query.filter_by(stock_id=i + 1, date="2013-08-16").first().ask
+            stocks[i].ask = stocks[i].bid + Decimal(1) / Decimal(100)
 
             # Add portfolio data
             basket_shares = BasketItem.query.filter_by(user_id=session["user"], stock_id=i + 1, strike=0).first()
             if basket_shares:
                 stocks[i].shares = basket_shares.qty
-                stocks[i].value = basket_shares.qty * stocks[i].bid
+                stocks[i].value = basket_shares.qty * (stocks[i].bid + Decimal(1) / Decimal(200))
             else:
                 stocks[i].shares = 0
                 stocks[i].value = 0
@@ -103,7 +100,7 @@ def midnight():
 
     # Add value of basket items
     for basket_item in BasketItem.query.all():
-        portfolio_values[basket_item.user_id] += (basket_item.qty * StockPrice.query.filter_by(stock_id=basket_item.stock_id, date="2013-08-19").first().bid + basket_item.qty * StockPrice.query.filter_by(stock_id=basket_item.stock_id, date="2013-08-19").first().ask) / 2
+        portfolio_values[basket_item.user_id] += basket_item.qty * (StockPrice.query.filter_by(stock_id=basket_item.stock_id, date="2013-08-19").first().bid + Decimal(1) / Decimal(200))
 
     # Store tracking errors
     target = 50000000 * Decimal(math.exp(1 / 36500))
