@@ -13,16 +13,16 @@ from forms import RegForm, LoginForm, TradeForm
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+    """Main page that serves as both login screen and app screen."""
+
     # Identifies which form (if any) was submitted
     action = request.form["action"] if request.method == "POST" else None
 
     if "user" in session:
         user = User.query.filter_by(id=session["user"]).first()
 
-        # Generate forms
+        # Generate form
         tradeform = TradeForm(request.form)
-        csrf_markup = '<input name="csrf_token" type="hidden" value="' + str(tradeform.csrf_token)[62:-2] + '">'
-        tradeform.csrf_token_no_id = csrf_markup
 
         # Handle POST requests
         if action == "logout":
@@ -39,7 +39,6 @@ def index():
                     basket_item.qty += tradeform.trade_qty.data
                 else:
                     db.session.add(BasketItem(session["user"], tradeform.trade_stock.data, True, 0, tradeform.trade_qty.data))
-                db.session.commit()
             else: # Sell
                 # Add to cash
                 user.cash += Decimal(0.996) * tradeform.trade_qty.data * StockPrice.query.filter_by(stock_id=tradeform.trade_stock.data, date="2013-08-16").first().bid
@@ -50,14 +49,18 @@ def index():
                     basket_item.qty -= tradeform.trade_qty.data
                 else:
                     db.session.delete(basket_item)
-                db.session.commit()
+
+            # Save to database
             db.session.commit()
 
+        # Generate stock table
         stocks = Stock.query.all()
         for i in xrange(len(stocks)):
+            # Add bid/ask data
             stocks[i].bid = StockPrice.query.filter_by(stock_id=i + 1, date="2013-08-16").first().bid
             stocks[i].ask = StockPrice.query.filter_by(stock_id=i + 1, date="2013-08-16").first().ask
 
+            # Add portfolio data
             basket_shares = BasketItem.query.filter_by(user_id=session["user"], stock_id=i + 1, strike=0).first()
             if basket_shares:
                 stocks[i].shares = basket_shares.qty
@@ -71,9 +74,6 @@ def index():
         # Generate forms
         regform = RegForm(request.form)
         loginform = LoginForm(request.form)
-        csrf_markup = '<input name="csrf_token" type="hidden" value="' + str(regform.csrf_token)[62:-2] + '">'
-        regform.csrf_token_no_id = csrf_markup
-        loginform.csrf_token_no_id = csrf_markup
 
         # Handle POST requests
         if action == "register" and regform.validate():
@@ -82,13 +82,14 @@ def index():
             session["user"] = User.query.filter_by(email=regform.reg_email.data).first().id
         elif action == "login" and loginform.validate():
             session["user"] = User.query.filter_by(email=loginform.login_email.data).first().id
-            stocks = Stock.query.all()
             return index()
 
         return render_template("login.html", regform=regform, loginform=loginform)
 
 @app.route("/midnight")
 def midnight():
+    """Advances current date by 1 day (should be called at midnight)."""
+
     # Add interest to cash, then record it
     portfolio_values = dict()
     for user in User.query.all():
@@ -109,16 +110,12 @@ def midnight():
 
     return str(portfolio_values)
 
-    # with open("midnight.sql", "w") as f:
-    #     f.write(sql)
-
-    # os.system("PGPASSWORD=postgres psql -U postgres -d cifer -f midnight.sql")
-
-
 @app.route("/favicon.ico")
 def favicon():
     return send_from_directory(os.path.join(app.root_path, "static"),
        "favicon.ico", mimetype="image/vnd.microsoft.icon")
+
+# Timing code
 
 @app.before_request
 def before_request():

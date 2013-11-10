@@ -3,7 +3,7 @@
 {% block body %}
 <div id="wrap">
   <form method=post>
-    {{ loginform.csrf_token_no_id | safe }}
+    <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
     <table>
       <tbody>
         <tr>
@@ -23,7 +23,7 @@
   </form>
 
   <form method=post>
-    {{ regform.csrf_token_no_id | safe }}
+    <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
     <table>
       <tbody>
         <tr>
