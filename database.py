@@ -136,6 +136,7 @@ if __name__ == "__main__":
     print(users_sql)
     print(transactions_sql)
     print(terrors_sql)
+    print(basket_items_sql)
     print(stocks_sql[:-2] + ";")
     print(stock_prices_sql[:-2] + ";")
     print(options_sql[:-2] + ";")

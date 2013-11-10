@@ -20,8 +20,8 @@
       {% for stock in stocks %}
       <tr>
         <td>{{ stock.symbol }}</td>
-        <td>0</td>
-        <td>0</td>
+        <td>{{ stock.shares }}</td>
+        <td>{{ stock.value }}</td>
         <td>{{ "%.2f" | format(stock.bid) }}</td>
         <td>{{ "%.2f" | format(stock.ask) }}</td>
       </tr>
