@@ -46,7 +46,7 @@ def index():
                 shortsell_qty = tradeform.trade_qty.data - sell_qty
 
                 # Add to cash
-                user.cash += (Decimal(0.996) * sell_qty + Decimal(0.98) * shortsell_qty) * StockPrice.query.filter_by(stock_id=tradeform.trade_stock.data, date="2013-08-16").first().bid
+                user.cash += (Decimal(0.996) * sell_qty + Decimal(0.99) * shortsell_qty) * StockPrice.query.filter_by(stock_id=tradeform.trade_stock.data, date="2013-08-16").first().bid
 
                 # Remove items from basket
                 basket_item.qty -= tradeform.trade_qty.data
@@ -103,7 +103,7 @@ def midnight():
 
     # Add value of basket items
     for basket_item in BasketItem.query.all():
-        portfolio_values[basket_item.user_id] += basket_item.qty * StockPrice.query.filter_by(stock_id=basket_item.stock_id, date="2013-08-19").first().bid
+        portfolio_values[basket_item.user_id] += (basket_item.qty * StockPrice.query.filter_by(stock_id=basket_item.stock_id, date="2013-08-19").first().bid + basket_item.qty * StockPrice.query.filter_by(stock_id=basket_item.stock_id, date="2013-08-19").first().ask) / 2
 
     # Store tracking errors
     target = 50000000 * Decimal(math.exp(1 / 36500))
