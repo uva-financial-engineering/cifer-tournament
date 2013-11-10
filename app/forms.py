@@ -1,15 +1,15 @@
 from flask.ext.wtf import Form
-from wtforms import TextField, TextAreaField, SubmitField, validators, ValidationError, PasswordField
+from wtforms import TextField, TextAreaField, SelectField, SubmitField, RadioField, validators, ValidationError, PasswordField
 
 from app import db, app
-from models import User
+from models import User, Stock
 
 class RegForm(Form):
     reg_email = TextField("Email", [
-        validators.Required("Please enter your email address."),
+        validators.InputRequired("Please enter your email address."),
         validators.Email("Please enter your email address.")])
     reg_password = PasswordField("Password", [
-        validators.Required("Please enter a password.")])
+        validators.InputRequired("Please enter a password.")])
     submit = SubmitField("Create account")
 
     def __init__(self, *args, **kwargs):
@@ -27,10 +27,10 @@ class RegForm(Form):
 
 class LoginForm(Form):
     login_email = TextField("Email", [
-        validators.Required("Please enter your email address."),
+        validators.InputRequired("Please enter your email address."),
         validators.Email("Please enter your email address.")])
     login_password = PasswordField("Password", [
-        validators.Required("Please enter a password.")])
+        validators.InputRequired("Please enter a password.")])
     submit = SubmitField("Create account")
 
     def __init__(self, *args, **kwargs):
@@ -46,3 +46,18 @@ class LoginForm(Form):
         else:
             self.login_email.errors.append("Invalid e-mail or password")
             return False
+
+class TradeForm(Form):
+    stocks = Stock.query.all()
+    trade_stock = SelectField("Symbol", [validators.InputRequired("Please choose a stock")], coerce=int, choices=[(s.id, s.symbol) for s in stocks])
+    trade_qty = TextField("Quantity", [validators.InputRequired("Enter a quantity.")])
+    trade_position = RadioField("Action", [validators.InputRequired("Enter a position")], coerce=int, choices=[(0, "Buy"), (1, "Sell"), (2, "Short Sell")])
+
+    def __init__(self, *args, **kwargs):
+        Form.__init__(self, *args, **kwargs)
+
+    def validate(self):
+        if not Form.validate(self):
+            return False
+
+        return True

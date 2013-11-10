@@ -22,61 +22,38 @@
         <td>{{ stock.symbol }}</td>
         <td>0</td>
         <td>0</td>
-        <td>{{ stock.bid }}</td>
-        <td>{{ stock.ask }}</td>
+        <td>{{ "%.2f" | format(stock.bid) }}</td>
+        <td>{{ "%.2f" | format(stock.ask) }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
-  <p><form method=post><button type=submit name=action value=logout>Sign Out</button></form></p>
+  <p>{{ user.email }}: ${{ "%.2f" | format(user.cash) }}</p>
+  <form method=post><button type=submit name=action value=logout>Sign Out</button></form>
   <p>27 March 2014, 04:15:37</p>
   <h2>Trade</h2>
-  <table class="trade-table">
-    <tbody>
-      <tr>
-        <td>Symbol:</td>
-        <td>
-          <select>
-            {% for stock in stocks %}
-            <option value="">{{ stock.symbol }}</option>
-            {% endfor %}
-          </select>
-        </td>
-      </tr>
-      <tr>
-        <td>Quantity:</td>
-        <td><input type="text"></td>
-      </tr>
-      <tr>
-        <td>Action:</td>
-        <td>
-          <table class="action-table">
-            <tbody>
-              <tr>
-                <th>Type</th>
-                <th>Transaction Cost</th>
-              </tr>
-              <tr>
-                <td><input type="radio" name="trade-action"> Buy</td>
-                <td>0.004</td>
-              </tr>
-              <tr>
-                <td><input type="radio" name="trade-action"> Short</td>
-                <td>0.004</td>
-              </tr>
-              <tr>
-                <td><input type="radio" name="trade-action"> SellShort</td>
-                <td>0.01</td>
-              </tr>
-            </tbody>
-          </table>
-        </td>
-      </tr>
-      <tr>
-        <td>&nbsp;</td>
-        <td><button>Submit</button></td>
-      </tr>
-    </tbody>
-  </table>
+  <form method=post>
+    {{ tradeform.csrf_token_no_id | safe }}
+    <table class="trade-table">
+      <tbody>
+        <tr>
+          <td>{{ tradeform.trade_stock.label }}</td>
+          <td>{{ tradeform.trade_stock }}</td>
+        </tr>
+        <tr>
+          <td>{{ tradeform.trade_qty.label }}</td>
+          <td>{{ tradeform.trade_qty }}</td>
+        </tr>
+        <tr>
+          <td>{{ tradeform.trade_position.label }}</td>
+          <td>{{ tradeform.trade_position }}</td>
+        </tr>
+        <tr>
+          <td>&nbsp;</td>
+          <td><button type=submit name=action value=trade>Submit</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </form>
 </div>
 {% endblock %}

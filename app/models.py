@@ -8,6 +8,8 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.Text, unique=True)
     password = db.Column(db.Text)
+    cash = db.Column(db.Float)
+    margin = db.Column(db.Float)
 
     def __init__(self, email, password):
         self.email = email.lower()
@@ -24,3 +26,12 @@ class Stock(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     symbol = db.Column(db.Text, unique=True)
+
+class StockPrice(db.Model):
+    __tablename__ = "stock_prices"
+
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.DateTime)
+    stock_id = db.Column(db.Integer)
+    bid = db.Column(db.Float)
+    ask = db.Column(db.Float)

@@ -8,9 +8,10 @@ CREATE TABLE users (
   email text NOT NULL,
   password text NOT NULL,
   cash numeric NOT NULL,
+  margin numeric NOT NULL,
   CONSTRAINT users_pkey PRIMARY KEY (id)
 ) WITH (OIDS=FALSE);
-INSERT INTO users (email, password, cash) VALUES ('a@a.com', 'pbkdf2:sha1:1000$pVkEoJO4$82724b822cbcfb54c50122147c9f1e6b4dfed53c', 50000000);"""
+INSERT INTO users (email, password, cash, margin) VALUES ('a@a.com', 'pbkdf2:sha1:1000$pVkEoJO4$82724b822cbcfb54c50122147c9f1e6b4dfed53c', 50000000, 0);"""
 
 stocks_sql = """DROP TABLE IF EXISTS stocks;
 CREATE TABLE stocks (
