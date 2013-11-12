@@ -8,6 +8,12 @@ class RegForm(Form):
     reg_email = TextField("Email", [
         validators.InputRequired("Please enter your email address."),
         validators.Email("Please enter your email address.")])
+    reg_first = TextField("First Name", [
+        validators.InputRequired("Please enter your first name.")])
+    reg_last = TextField("Last Name", [
+        validators.InputRequired("Please enter your last name.")])
+    reg_institution = TextField("Institution", [
+        validators.InputRequired("Please enter your institution.")])
     reg_password = PasswordField("Password", [
         validators.InputRequired("Please enter a password.")])
     submit = SubmitField("Create account")

@@ -8,12 +8,18 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.Text, unique=True)
     password = db.Column(db.Text)
+    first_name = db.Column(db.Text)
+    last_name = db.Column(db.Text)
+    institution = db.Column(db.Text)
     cash = db.Column(db.Numeric)
-    margin = db.Column(db.Numeric)
 
-    def __init__(self, email, password):
+    def __init__(self, email, password, first_name, last_name, institution):
         self.email = email.lower()
         self.set_password(password)
+        self.first_name = first_name
+        self.last_name = last_name
+        self.institution = institution
+        self.cash = 18000000
 
     def set_password(self, plaintext):
         self.password = generate_password_hash(plaintext)

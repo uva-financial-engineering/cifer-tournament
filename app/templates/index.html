@@ -21,7 +21,7 @@
       <tr>
         <td>{{ stock.symbol }}</td>
         <td>{{ stock.shares }}</td>
-        <td>{{ stock.value }}</td>
+        <td>{{ "%.2f" | format(stock.value) }}</td>
         <td>{{ "%.2f" | format(stock.bid) }}</td>
         <td>{{ "%.2f" | format(stock.ask) }}</td>
       </tr>
