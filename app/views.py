@@ -30,9 +30,9 @@ def index():
             return index()
         elif action == "trade" and tradeform.validate():
             # Get basket item (or create it if nonexistent)
-            basket_item = BasketItem.query.filter_by(user_id=session["user"], stock_id=tradeform.trade_stock.data).first()
+            basket_item = BasketItem.query.filter_by(user_id=session["user"], stock_id=tradeform.trade_stock.data, strike=-1).first()
             if basket_item is None:
-                basket_item = BasketItem(session["user"], tradeform.trade_stock.data, True, 0, 0)
+                basket_item = BasketItem(session["user"], tradeform.trade_stock.data, True, -1, 0)
                 db.session.add(basket_item)
 
             if tradeform.trade_position.data == "buy":
@@ -63,7 +63,7 @@ def index():
             stocks[i].ask = stocks[i].bid + Decimal(1) / Decimal(100)
 
             # Add portfolio data
-            basket_shares = BasketItem.query.filter_by(user_id=session["user"], stock_id=i + 1, strike=0).first()
+            basket_shares = BasketItem.query.filter_by(user_id=session["user"], stock_id=i + 1, strike=-1).first()
             if basket_shares:
                 stocks[i].shares = basket_shares.qty
                 stocks[i].value = basket_shares.qty * (stocks[i].bid + Decimal(1) / Decimal(200))

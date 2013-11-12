@@ -14,7 +14,7 @@ CREATE TABLE users (
   cash numeric NOT NULL,
   CONSTRAINT users_pkey PRIMARY KEY (id)
 ) WITH (OIDS=FALSE);
-INSERT INTO users (email, password, first_name, last_name, institution, cash) VALUES ('a@a.com', 'pbkdf2:sha1:1000$pVkEoJO4$82724b822cbcfb54c50122147c9f1e6b4dfed53c', 'John', 'Doe', 'University of Virginia', 50000000);"""
+INSERT INTO users (email, password, first_name, last_name, institution, cash) VALUES ('a@a.com', 'pbkdf2:sha1:1000$pVkEoJO4$82724b822cbcfb54c50122147c9f1e6b4dfed53c', 'John', 'Doe', 'University of Virginia', 18000000);"""
 
 stocks_sql = """DROP TABLE IF EXISTS stocks;
 CREATE TABLE stocks (
@@ -80,7 +80,23 @@ CREATE TABLE basket_items (
     strike numeric NOT NULL,
     qty numeric NOT NULL,
     CONSTRAINT basket_items_pkey PRIMARY KEY (id)
-) WITH (OIDS=FALSE);"""
+) WITH (OIDS=FALSE);
+INSERT INTO basket_items (user_id, stock_id, is_call, strike, qty) VALUES
+    (1, 5, FALSE, -1, 300000),
+    (1, 5, TRUE, 12, 800000),
+    (1, 5, TRUE, 12.5, 850000),
+    (1, 11, FALSE, -1, 150000),
+    (1, 11, FALSE, 12.5, 100000),
+    (1, 11, FALSE, 13.5, 600000),
+    (1, 11, FALSE, 14.5, 1000000),
+    (1, 2, FALSE, -1, -5000),
+    (1, 7, FALSE, -1, 100000),
+    (1, 7, FALSE, 43, 2000000),
+    (1, 12, FALSE, 68, 1000000),
+    (1, 12, TRUE, 64, 700000),
+    (1, 12, TRUE, 62, 450000),
+    (1, 1, FALSE, -1, 800000);
+"""
 
 if __name__ == "__main__":
 
