@@ -65,7 +65,7 @@ def index():
 
         # Generate stock table
         stocks = dict((s.id, s.symbol) for s in Stock.query.all())
-        assets = AssetPrice.query.filter_by(date=LAST_WEEKDAY).all()
+        assets = AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.stock_id, AssetPrice.is_call, AssetPrice.strike).all()
         app.logger.debug("Time: " + str(time.time() - g.start))
         portfolio_assets = dict(((a.stock_id, a.is_call, a.strike), a.qty) for a in PortfolioAsset.query.filter_by(user_id=session["user"]).all())
         for asset in assets:
