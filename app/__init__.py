@@ -3,7 +3,7 @@ from flask_wtf.csrf import CsrfProtect
 from flask.ext.sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-app.config.from_object("config")
+app.config.from_object("config" if app.debug else "herokuconfig")
 
 db = SQLAlchemy(app)
 CsrfProtect(app)
