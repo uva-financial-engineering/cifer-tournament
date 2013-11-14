@@ -6,7 +6,7 @@ import time
 from datetime import date, timedelta
 from decimal import Decimal
 
-from flask import render_template, g, request, session, send_from_directory
+from flask import render_template, g, redirect, request, session, send_from_directory, url_for
 
 from app import app, db
 from models import User, Stock, AssetPrice, PortfolioAsset, Terror
@@ -72,7 +72,7 @@ def index():
         portfolio_assets = dict(((a.stock_id, a.is_call, a.strike), a.qty) for a in PortfolioAsset.query.filter_by(user_id=session["user"]).all())
         for asset in assets:
             asset.symbol = stocks[asset.stock_id]
-            asset.name = "Stock" if asset.strike < 0 else str(asset.strike) + "-strike " + ("call" if asset.is_call else "put")
+            asset.name = "Stock" if asset.strike < 0 else str(asset.strike) + (" Call" if asset.is_call else " Put")
 
             # Add portfolio data
             if (asset.stock_id, asset.is_call, asset.strike) in portfolio_assets:
@@ -83,7 +83,13 @@ def index():
                 asset.shares = 0
                 asset.value = 0
 
-        return render_template("index.html", user=user, date=TODAY, assets=assets, tradeform=tradeform)
+        # Generate tracking error table
+        terrors = []
+        for terror in Terror.query.filter_by(user_id=session["user"]).order_by(Terror.date).all():
+            terrors.append((terror.date, terror.terror))
+        app.logger.debug(terrors)
+
+        return render_template("index.html", user=user, date=TODAY, assets=assets, tradeform=tradeform, terrors=terrors)
     else:
         # Generate forms
         regform = RegForm(request.form)
@@ -132,9 +138,9 @@ def midnight():
             db.session.add(Terror(TODAY, user, terror))
 
         db.session.commit()
-        return str(portfolio_values) + "\n" + str(TODAY)
+        return redirect(url_for("index"))
 
-    return str(TODAY)
+    return redirect(url_for("index"))
 
 @app.route("/favicon.ico")
 def favicon():
