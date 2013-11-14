@@ -20,7 +20,7 @@
         <th>Ask</th>
       </tr>
       {% for asset in assets %}
-      <tr>
+      <tr data-coord="{{ 1 if asset.is_call else 0 }},{{ asset.strike }},{{ asset.stock_id }}">
         <td>{{ asset.symbol }}</td>
         <td>{{ asset.name }}</td>
         <td>{{ asset.shares }}</td>
@@ -35,20 +35,17 @@
   <form method=post>
     <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
     <button type=submit name=action value=logout>Sign Out</button></form>
-  <p>{{ date }}</p>
+  <p>Date: {{ " " }}{{ date }}</p>
   <p>Cash: ${{ "%.2f" | format(user.cash) }}</p>
   <h2>Trade</h2>
-  <form method=post>
+  <form id="tradeform" method=post>
     <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+    <div style="display:none">{{ tradeform.trade_asset }}</div>
     <table class="trade-table">
       <tbody>
         <tr>
-          <td>{{ tradeform.trade_stock.label }}</td>
-          <td>{{ tradeform.trade_stock }}</td>
-        </tr>
-        <tr>
-          <td>{{ tradeform.trade_asset.label }}</td>
-          <td>{{ tradeform.trade_asset }}</td>
+          <td>Asset</td>
+          <td id="trade_asset_name">(none selected)</td>
         </tr>
         <tr>
           <td>{{ tradeform.trade_qty.label }}</td>
@@ -66,4 +63,17 @@
     </table>
   </form>
 </div>
+{% endblock %}
+
+{% block js %}
+<script>
+  $(".trade-table input, .trade-table button").prop("disabled", true);
+  $(".info-table tr").has("td").click(function() {
+    $(".trade-table input, .trade-table button").prop("disabled", false);
+    $("#trade_qty input").val("");
+    $("#trade_asset_name").html($($(this).find("td")[0]).html() + " " + $($(this).find("td")[1]).html());
+    $("#trade_asset").val($(this).attr("data-coord"));
+    $("label[for=trade_position-1]").html((parseFloat($($(this).find("td")[2]).html()) > 0) ? "Sell" : "Short sell");
+  });
+</script>
 {% endblock %}

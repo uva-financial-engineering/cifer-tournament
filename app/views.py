@@ -35,23 +35,25 @@ def index():
             session.pop("user", None)
             return index()
         elif action == "trade" and tradeform.validate():
-            is_call, strike = trade.trade_asset.data.split(",")
+            is_call = tradeform.trade_asset.data.split(",")[0] == "1"
+            strike = tradeform.trade_asset.data.split(",")[1]
+            stock_id = tradeform.trade_asset.data.split(",")[2]
 
             # Get basket item (or create it if nonexistent)
-            portfolio_asset = PortfolioAsset.query.filter_by(user_id=session["user"], stock_id=tradeform.trade_stock.data, is_call=is_call, strike=strike).first()
+            portfolio_asset = PortfolioAsset.query.filter_by(user_id=session["user"], stock_id=stock_id, is_call=is_call, strike=strike).first()
             if portfolio_asset is None:
-                portfolio_asset = PortfolioAsset(session["user"], tradeform.trade_stock.data, is_call, strike, 0)
+                portfolio_asset = PortfolioAsset(session["user"], stock_id, is_call, strike, 0)
                 db.session.add(portfolio_asset)
 
             if tradeform.trade_position.data == "buy":
                 # Subtract from cash
-                user.cash -= Decimal("1.004") * tradeform.trade_qty.data * AssetPrice.query.filter_by(stock_id=tradeform.trade_stock.data, is_call=is_call, strike=strike, date=LAST_WEEKDAY).first().ask
+                user.cash -= Decimal("1.004") * tradeform.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, is_call=is_call, strike=strike, date=LAST_WEEKDAY).first().ask
 
                 # Add items to basket
                 portfolio_asset.qty += tradeform.trade_qty.data
             else:
                 # Add to cash
-                user.cash += Decimal("0.996" if portfolio_asset.qty > 0 else "0.99") * tradeform.trade_qty.data * StockPrice.query.filter_by(stock_id=tradeform.trade_stock.data, is_call=is_call, strike=strike, date=LAST_WEEKDAY).first().bid
+                user.cash += Decimal("0.996" if portfolio_asset.qty > 0 else "0.99") * tradeform.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, is_call=is_call, strike=strike, date=LAST_WEEKDAY).first().bid
 
                 # Remove items from basket
                 portfolio_asset.qty -= tradeform.trade_qty.data
