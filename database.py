@@ -25,20 +25,10 @@ CREATE TABLE stocks (
 INSERT INTO stocks (symbol)
 VALUES """
 
-stock_prices_sql = """DROP TABLE IF EXISTS stock_prices;
-CREATE TABLE stock_prices (
-    id serial NOT NULL,
-    date date NOT NULL,
-    stock_id integer NOT NULL,
-    bid numeric NOT NULL,
-    ask numeric NOT NULL,
-    CONSTRAINT stock_prices_pkey PRIMARY KEY (id)
-) WITH (OIDS=FALSE);
-INSERT INTO stock_prices (date, stock_id, bid, ask)
-VALUES """
-
-option_prices_sql = """DROP TABLE IF EXISTS option_prices;
-CREATE TABLE option_prices (
+asset_prices_sql = """DROP TABLE IF EXISTS asset_prices;
+DROP TABLE IF EXISTS stock_prices;
+DROP TABLE IF EXISTS option_prices;
+CREATE TABLE asset_prices (
     id serial NOT NULL,
     date date NOT NULL,
     stock_id integer NOT NULL,
@@ -46,9 +36,9 @@ CREATE TABLE option_prices (
     strike numeric NOT NULL,
     bid numeric NOT NULL,
     ask numeric NOT NULL,
-    CONSTRAINT option_prices_pkey PRIMARY KEY (id)
+    CONSTRAINT asset_prices_pkey PRIMARY KEY (id)
 ) WITH (OIDS=FALSE);
-INSERT INTO option_prices (date, stock_id, is_call, strike, bid, ask)
+INSERT INTO asset_prices (date, stock_id, is_call, strike, bid, ask)
 VALUES """
 
 transactions_sql = """DROP TABLE IF EXISTS transactions;
@@ -71,17 +61,18 @@ CREATE TABLE terrors (
     CONSTRAINT terrors_pkey PRIMARY KEY (id)
 ) WITH (OIDS=FALSE);"""
 
-basket_items_sql = """DROP TABLE IF EXISTS basket_items;
-CREATE TABLE basket_items (
+portfolio_assets_sql = """DROP TABLE IF EXISTS portfolio_assets;
+DROP TABLE IF EXISTS basket_items;
+CREATE TABLE portfolio_assets (
     id serial NOT NULL,
     user_id integer NOT NULL,
     stock_id integer NOT NULL,
     is_call boolean NOT NULL,
     strike numeric NOT NULL,
     qty numeric NOT NULL,
-    CONSTRAINT basket_items_pkey PRIMARY KEY (id)
+    CONSTRAINT portfolio_assets_pkey PRIMARY KEY (id)
 ) WITH (OIDS=FALSE);
-INSERT INTO basket_items (user_id, stock_id, is_call, strike, qty) VALUES
+INSERT INTO portfolio_assets (user_id, stock_id, is_call, strike, qty) VALUES
     (1, 5, FALSE, -1, 300000),
     (1, 5, TRUE, 12, 800000),
     (1, 5, TRUE, 12.5, 850000),
@@ -108,7 +99,7 @@ if __name__ == "__main__":
             f.write(users_sql +
                 transactions_sql +
                 terrors_sql +
-                basket_items_sql)
+                portfolio_assets_sql)
 
         # Execute file
 
@@ -148,7 +139,7 @@ if __name__ == "__main__":
         date[0] = "%02d" % int(date[0])
         date[1] = "%02d" % int(date[1])
 
-        stock_prices_sql += "('%s', %d, %s, %s), " % ("-".join([date[2], date[0], date[1]]), stocks[pieces[1]], pieces[2], pieces[3])
+        asset_prices_sql += "('%s', %d, FALSE, -1, %s, %s), " % ("-".join([date[2], date[0], date[1]]), stocks[pieces[1]], pieces[2], pieces[3])
 
     # Options
 
@@ -161,7 +152,7 @@ if __name__ == "__main__":
         date[0] = "%02d" % int(date[0])
         date[1] = "%02d" % int(date[1])
 
-        option_prices_sql += "('%s', %d, %s, %s, %s, %s), " % ("-".join([date[2], date[0], date[1]]), stocks[pieces[1]], "TRUE" if pieces[2] == "Call" else "FALSE", pieces[3], pieces[4], pieces[5])
+        asset_prices_sql += "('%s', %d, %s, %s, %s, %s), " % ("-".join([date[2], date[0], date[1]]), stocks[pieces[1]], "TRUE" if pieces[2] == "Call" else "FALSE", pieces[3], pieces[4], pieces[5])
 
     # Write to SQL file
 
@@ -169,10 +160,9 @@ if __name__ == "__main__":
         f.write(users_sql +
             transactions_sql +
             terrors_sql +
-            basket_items_sql +
+            portfolio_assets_sql +
             stocks_sql[:-2] + ";" +
-            stock_prices_sql[:-2] + ";" +
-            option_prices_sql[:-2] + ";")
+            asset_prices_sql[:-2] + ";")
 
     # Execute file
 

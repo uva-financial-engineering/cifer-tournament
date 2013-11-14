@@ -33,17 +33,8 @@ class Stock(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     symbol = db.Column(db.Text, unique=True)
 
-class StockPrice(db.Model):
-    __tablename__ = "stock_prices"
-
-    id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.DateTime)
-    stock_id = db.Column(db.Integer)
-    bid = db.Column(db.Numeric)
-    ask = db.Column(db.Numeric)
-
-class OptionPrice(db.Model):
-    __tablename__ = "option_prices"
+class AssetPrice(db.Model):
+    __tablename__ = "asset_prices"
 
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.DateTime)
@@ -53,8 +44,8 @@ class OptionPrice(db.Model):
     bid = db.Column(db.Numeric)
     ask = db.Column(db.Numeric)
 
-class BasketItem(db.Model):
-    __tablename__ = "basket_items"
+class PortfolioAsset(db.Model):
+    __tablename__ = "portfolio_assets"
 
     def __init__(self, user_id, stock_id, is_call, strike, qty):
         self.user_id = user_id

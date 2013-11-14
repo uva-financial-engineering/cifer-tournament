@@ -2,7 +2,7 @@ from flask.ext.wtf import Form
 from wtforms import TextField, TextAreaField, SelectField, SubmitField, DecimalField, RadioField, validators, ValidationError, PasswordField
 
 from app import db, app
-from models import User, Stock
+from models import User, Stock, AssetPrice
 
 class RegForm(Form):
     reg_email = TextField("Email", [
@@ -54,8 +54,10 @@ class LoginForm(Form):
             return False
 
 class TradeForm(Form):
-    stocks = Stock.query.all()
-    trade_stock = SelectField("Symbol", [validators.InputRequired("Please choose a stock")], coerce=int, choices=[(s.id, s.symbol) for s in stocks])
+    stocks = [(s.id, s.symbol) for s in Stock.query.all()]
+    assets = AssetPrice.query.filter_by(date="2013-08-16").all()
+    trade_stock = SelectField("Symbol", [validators.InputRequired("Please choose a stock")], coerce=int, choices=stocks)
+    trade_asset = SelectField("Asset", [validators.InputRequired("Please choose an asset")], coerce=str, choices=[(("1" if a.is_call else "0") + "," + str(a.strike), ("1" if a.is_call else "0") + "," + str(a.strike)) for a in assets])
     trade_qty = DecimalField("Quantity", [validators.InputRequired("Enter a quantity.")])
     trade_position = RadioField("Action", [validators.InputRequired("Enter a position")], choices=[("buy", "Buy"), ("sell", "Sell")])
 

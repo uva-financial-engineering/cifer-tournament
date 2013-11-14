@@ -7,28 +7,31 @@
     <tbody>
       <tr>
         <th>&nbsp;</th>
+        <th>&nbsp;</th>
         <th colspan="2">Portfolio</th>
         <th colspan="2">Market</th>
       </tr>
       <tr>
         <th>Symbol</th>
+        <th>Asset</th>
         <th>Shares</th>
         <th>Value</th>
         <th>Bid</th>
         <th>Ask</th>
       </tr>
-      {% for stock in stocks %}
+      {% for asset in assets %}
       <tr>
-        <td>{{ stock.symbol }}</td>
-        <td>{{ stock.shares }}</td>
-        <td>{{ "%.2f" | format(stock.value) }}</td>
-        <td>{{ "%.2f" | format(stock.bid) }}</td>
-        <td>{{ "%.2f" | format(stock.ask) }}</td>
+        <td>{{ asset.symbol }}</td>
+        <td>{{ asset.name }}</td>
+        <td>{{ asset.shares }}</td>
+        <td>{{ "%.2f" | format(asset.value) }}</td>
+        <td>{{ "%.2f" | format(asset.bid) }}</td>
+        <td>{{ "%.2f" | format(asset.ask) }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
-  <p>{{ user.email }}: ${{ "%.2f" | format(user.cash) }}</p>
+  <p>{{ user.email }}: ${{ "%.2f" | format(user.cash) }} cash</p>
   <form method=post>
     <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
     <button type=submit name=action value=logout>Sign Out</button></form>
@@ -41,6 +44,10 @@
         <tr>
           <td>{{ tradeform.trade_stock.label }}</td>
           <td>{{ tradeform.trade_stock }}</td>
+        </tr>
+        <tr>
+          <td>{{ tradeform.trade_asset.label }}</td>
+          <td>{{ tradeform.trade_asset }}</td>
         </tr>
         <tr>
           <td>{{ tradeform.trade_qty.label }}</td>
