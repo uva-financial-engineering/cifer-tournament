@@ -42,6 +42,17 @@ class StockPrice(db.Model):
     bid = db.Column(db.Numeric)
     ask = db.Column(db.Numeric)
 
+class OptionPrice(db.Model):
+    __tablename__ = "option_prices"
+
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.DateTime)
+    stock_id = db.Column(db.Integer)
+    is_call = db.Column(db.Boolean)
+    strike = db.Column(db.Numeric)
+    bid = db.Column(db.Numeric)
+    ask = db.Column(db.Numeric)
+
 class BasketItem(db.Model):
     __tablename__ = "basket_items"
 

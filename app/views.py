@@ -3,13 +3,19 @@ from __future__ import division
 import os
 import math
 import time
+from datetime import date, timedelta
 from decimal import Decimal
 
 from flask import render_template, g, request, session, send_from_directory
 
 from app import app, db
-from models import User, Stock, StockPrice, BasketItem, Terror
+from models import User, Stock, StockPrice, OptionPrice, BasketItem, Terror
 from forms import RegForm, LoginForm, TradeForm
+
+TODAY = "2013-08-16"
+LAST_WEEKDAY = "2013-08-16"
+RATE = Decimal("1.0000273976355823353284453")
+TARGET = Decimal("50000000")
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -37,13 +43,13 @@ def index():
 
             if tradeform.trade_position.data == "buy":
                 # Subtract from cash
-                user.cash -= Decimal(1.004) * tradeform.trade_qty.data * StockPrice.query.filter_by(stock_id=tradeform.trade_stock.data, date="2013-08-16").first().ask
+                user.cash -= Decimal("1.004") * tradeform.trade_qty.data * StockPrice.query.filter_by(stock_id=tradeform.trade_stock.data, date=LAST_WEEKDAY).first().ask
 
                 # Add items to basket
                 basket_item.qty += tradeform.trade_qty.data
             else:
                 # Add to cash
-                user.cash += Decimal(0.996 if basket_item.qty > 0 else 0.99) * tradeform.trade_qty.data * StockPrice.query.filter_by(stock_id=tradeform.trade_stock.data, date="2013-08-16").first().bid
+                user.cash += Decimal("0.996" if basket_item.qty > 0 else "0.99") * tradeform.trade_qty.data * StockPrice.query.filter_by(stock_id=tradeform.trade_stock.data, date=LAST_WEEKDAY).first().bid
 
                 # Remove items from basket
                 basket_item.qty -= tradeform.trade_qty.data
@@ -59,19 +65,19 @@ def index():
         stocks = Stock.query.all()
         for i in xrange(len(stocks)):
             # Add bid/ask data
-            stocks[i].bid = StockPrice.query.filter_by(stock_id=i + 1, date="2013-08-16").first().bid
-            stocks[i].ask = stocks[i].bid + Decimal(1) / Decimal(100)
+            stocks[i].bid = StockPrice.query.filter_by(stock_id=i + 1, date=LAST_WEEKDAY).first().bid
+            stocks[i].ask = stocks[i].bid + Decimal("0.01")
 
             # Add portfolio data
             basket_shares = BasketItem.query.filter_by(user_id=session["user"], stock_id=i + 1, strike=-1).first()
             if basket_shares:
                 stocks[i].shares = basket_shares.qty
-                stocks[i].value = basket_shares.qty * (stocks[i].bid + Decimal(1) / Decimal(200))
+                stocks[i].value = basket_shares.qty * (stocks[i].bid + Decimal("0.005"))
             else:
                 stocks[i].shares = 0
                 stocks[i].value = 0
 
-        return render_template("index.html", user=user, stocks=stocks, tradeform=tradeform)
+        return render_template("index.html", user=user, date=TODAY, stocks=stocks, tradeform=tradeform)
     else:
         # Generate forms
         regform = RegForm(request.form)
@@ -92,25 +98,39 @@ def index():
 def midnight():
     """Advances current date by 1 day (should be called at midnight)."""
 
-    # Add interest to cash, then record it
-    portfolio_values = dict()
-    for user in User.query.all():
-        user.cash *= Decimal(math.exp(1 / 36500))
-        portfolio_values[user.id] = user.cash
+    global TODAY, LAST_WEEKDAY, RATE, TARGET
 
-    # Add value of basket items
-    for basket_item in BasketItem.query.all():
-        portfolio_values[basket_item.user_id] += basket_item.qty * (StockPrice.query.filter_by(stock_id=basket_item.stock_id, date="2013-08-19").first().bid + Decimal(1) / Decimal(200))
+    # Calculate new date
+    t = time.strptime(TODAY, "%Y-%m-%d")
+    TODAY = (date(t.tm_year,t.tm_mon,t.tm_mday) + timedelta(1)).strftime("%Y-%m-%d")
 
-    # Store tracking errors
-    target = 50000000 * Decimal(math.exp(1 / 36500))
-    for user, value in portfolio_values.iteritems():
-        terror = target - value if value < target else (value - target) / 2
-        db.session.add(Terror("2013-08-19", user, terror))
+    # Calculate most recent weekday
+    stock_prices = dict((s.stock_id, s.bid + Decimal("0.005")) for s in StockPrice.query.filter_by(date=TODAY).all())
+    if len(stock_prices):
+        LAST_WEEKDAY = TODAY
 
-    db.session.commit()
+        option_prices = dict((o.stock_id, o.bid + Decimal("0.005")) for o in OptionPrice.query.filter_by(date=TODAY).all())
 
-    return str(portfolio_values)
+        # Add interest to cash, then record it
+        portfolio_values = dict()
+        for user in User.query.all():
+            user.cash *= RATE
+            portfolio_values[user.id] = user.cash
+
+        # Add value of basket items
+        for basket_item in BasketItem.query.all():
+            portfolio_values[basket_item.user_id] += basket_item.qty * (stock_prices[basket_item.stock_id] if basket_item.strike < 0 else option_prices[basket_item.stock_id])
+
+        # Store tracking errors
+        TARGET *= RATE
+        for user, value in portfolio_values.iteritems():
+            terror = TARGET - value if value < TARGET else (value - TARGET) / 2
+            db.session.add(Terror(TODAY, user, terror))
+
+        db.session.commit()
+        return str(portfolio_values) + "\n" + str(TODAY)
+
+    return str(TODAY)
 
 @app.route("/favicon.ico")
 def favicon():

@@ -37,7 +37,7 @@ CREATE TABLE stock_prices (
 INSERT INTO stock_prices (date, stock_id, bid, ask)
 VALUES """
 
-options_sql = """DROP TABLE IF EXISTS option_prices;
+option_prices_sql = """DROP TABLE IF EXISTS option_prices;
 CREATE TABLE option_prices (
     id serial NOT NULL,
     date date NOT NULL,
@@ -161,7 +161,7 @@ if __name__ == "__main__":
         date[0] = "%02d" % int(date[0])
         date[1] = "%02d" % int(date[1])
 
-        options_sql += "('%s', %d, %s, %s, %s, %s), " % ("-".join([date[2], date[0], date[1]]), stocks[pieces[1]], "TRUE" if pieces[2] == "Call" else "FALSE", pieces[3], pieces[4], pieces[5])
+        option_prices_sql += "('%s', %d, %s, %s, %s, %s), " % ("-".join([date[2], date[0], date[1]]), stocks[pieces[1]], "TRUE" if pieces[2] == "Call" else "FALSE", pieces[3], pieces[4], pieces[5])
 
     # Write to SQL file
 
@@ -172,7 +172,7 @@ if __name__ == "__main__":
             basket_items_sql +
             stocks_sql[:-2] + ";" +
             stock_prices_sql[:-2] + ";" +
-            options_sql[:-2] + ";")
+            option_prices_sql[:-2] + ";")
 
     # Execute file
 
