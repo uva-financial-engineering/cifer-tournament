@@ -1,90 +1,79 @@
 {% extends "layout.html" %}
 
-{% block body %}
-<div id="wrap">
-  <div class="left-sidebar">
-    <h1>CIFEr</h1>
-    <p>{{ user.email }}</p>
-    <form method=post>
-      <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
-      <button type=submit name=action value=logout>Sign Out</button></form>
-    <p>Date: {{ " " }}{{ date }}</p>
-    <p>Cash: ${{ "%.2f" | format(user.cash) }}</p>
+{% block left %}
+<p>{{ user.email }}</p>
+<form method=post>
+  <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+  <button type=submit name=action value=logout>Sign Out</button></form>
+<p>Date: {{ " " }}{{ date }}</p>
+<p>Cash: ${{ "%.2f" | format(user.cash) }}</p>
 
-    <h2>Trade</h2>
-    <form id="tradeform" method=post>
-      <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
-      <div style="display:none">{{ tradeform.trade_asset }}</div>
-      <table class="trade-table">
-        <tbody>
-          <tr>
-            <td>Asset</td>
-            <td id="trade_asset_name">(none selected)</td>
-          </tr>
-          <tr>
-            <td>{{ tradeform.trade_qty.label }}</td>
-            <td>{{ tradeform.trade_qty(style="width:90px") }}</td>
-          </tr>
-          <tr>
-            <td>{{ tradeform.trade_position.label }}</td>
-            <td>{{ tradeform.trade_position }}</td>
-          </tr>
-          <tr>
-            <td>&nbsp;</td>
-            <td><button type=submit name=action value=trade>Submit</button></td>
-          </tr>
-        </tbody>
-      </table>
-    </form>
-  </div>
-  <div class="main">
-    <div class="content">
-      <table class="info-table">
-        <tbody>
-          <tr>
-            <th>&nbsp;</th>
-            <th>&nbsp;</th>
-            <th colspan="2">Portfolio</th>
-            <th colspan="2">Market</th>
-          </tr>
-          <tr>
-            <th>Symbol</th>
-            <th>Asset</th>
-            <th>Shares</th>
-            <th>Value</th>
-            <th>Bid</th>
-            <th>Ask</th>
-          </tr>
-          {% for asset in assets %}
-          <tr data-coord="{{ 1 if asset.is_call else 0 }},{{ asset.strike }},{{ asset.stock_id }}">
-            <td>{{ asset.symbol }}</td>
-            <td>{{ asset.name }}</td>
-            <td>{{ asset.shares }}</td>
-            <td>{{ "%.2f" | format(asset.value) }}</td>
-            <td>{{ "%.2f" | format(asset.bid) }}</td>
-            <td>{{ "%.2f" | format(asset.ask) }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    <p class="footer">&copy; 2014 University of Virginia</p>
-  </div>
-  <div class="right-sidebar">
-    <h2>Tracking Errors</h2>
-    <table>
-      <tbody>
-      {% for terror in terrors %}
-        <tr>
-          <td>{{ terror[0] }}:</td>
-          <td>{{ "%.4f" | format(terror[1]) }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
+<h2>Trade</h2>
+<form id="tradeform" method=post>
+  <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+  <div style="display:none">{{ tradeform.trade_asset }}</div>
+  <table class="trade-table">
+    <tbody>
+      <tr>
+        <td>Asset</td>
+        <td id="trade_asset_name">(none selected)</td>
+      </tr>
+      <tr>
+        <td>{{ tradeform.trade_qty.label }}</td>
+        <td>{{ tradeform.trade_qty(style="width:90px") }}</td>
+      </tr>
+      <tr>
+        <td>Action</td>
+        <td>{{ tradeform.trade_position }}</td>
+      </tr>
+      <tr>
+        <td>&nbsp;</td>
+        <td><button type=submit name=action value=trade>Submit</button></td>
+      </tr>
+    </tbody>
+  </table>
+</form>
+{% endblock %}
 
+{% block right %}
+<h2>Tracking Errors</h2>
+<table>
+  <tbody>
+  {% for terror in terrors %}
+    <tr>
+      <td>{{ terror[0] }}:</td>
+      <td>{{ "%.4f" | format(terror[1]) }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+
+{% block info %}
+<tr>
+  <th>&nbsp;</th>
+  <th>&nbsp;</th>
+  <th colspan="2">Portfolio</th>
+  <th colspan="2">Market</th>
+</tr>
+<tr>
+  <th>Symbol</th>
+  <th>Asset</th>
+  <th>Shares</th>
+  <th>Value</th>
+  <th>Bid</th>
+  <th>Ask</th>
+</tr>
+{% for asset in assets %}
+<tr data-coord="{{ 1 if asset.is_call else 0 }},{{ asset.strike }},{{ asset.stock_id }}">
+  <td>{{ asset.symbol }}</td>
+  <td>{{ asset.name }}</td>
+  <td>{{ asset.shares }}</td>
+  <td>{{ "%.2f" | format(asset.value) }}</td>
+  <td>{{ "%.2f" | format(asset.bid) }}</td>
+  <td>{{ "%.2f" | format(asset.ask) }}</td>
+</tr>
+{% endfor %}
 {% endblock %}
 
 {% block js %}

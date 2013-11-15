@@ -1,57 +1,79 @@
 {% extends "layout.html" %}
 
-{% block body %}
-<div id="wrap">
-  <form method=post>
-    <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
-    <table>
-      <tbody>
-        <tr>
-          <td>{{ loginform.login_email.label }}</td>
-          <td>{{ loginform.login_email }}</td>
-        </tr>
-        <tr>
-          <td>{{ loginform.login_password.label }}</td>
-          <td>{{ loginform.login_password }}</td>
-        </tr>
-        <tr>
-          <td>&nbsp;</td>
-          <td><button type=submit name=action value=login>Sign In</button></td>
-        </tr>
-      </tbody>
-    </table>
-  </form>
+{% block left %}
+<form method=post>
+  <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+  <table>
+    <tbody>
+      <tr>
+        <!-- <td>{{ loginform.login_email.label }}</td> -->
+        <td>{{ loginform.login_email(placeholder="Email") }}</td>
+      </tr>
+      <tr>
+        <!-- <td>{{ loginform.login_password.label }}</td> -->
+        <td>{{ loginform.login_password(placeholder="Password") }}</td>
+      </tr>
+      <tr>
+        <!-- <td>&nbsp;</td> -->
+        <td><button type=submit name=action value=login>Sign In</button></td>
+      </tr>
+    </tbody>
+  </table>
+</form>
+<p>&nbsp;</p>
+<form method=post>
+  <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+  <table>
+    <tbody>
+      <tr>
+        <!-- <td>{{ regform.reg_email.label }}</td> -->
+        <td>{{ regform.reg_email(placeholder="Email") }}</td>
+      </tr>
+      <tr>
+        <!-- <td>{{ regform.reg_first.label }}</td> -->
+        <td>{{ regform.reg_first(placeholder="First Name") }}</td>
+      </tr>
+      <tr>
+        <!-- <td>{{ regform.reg_last.label }}</td> -->
+        <td>{{ regform.reg_last(placeholder="Last Name") }}</td>
+      </tr>
+      <tr>
+        <!-- <td>{{ regform.reg_institution.label }}</td> -->
+        <td>{{ regform.reg_institution(placeholder="Institution") }}</td>
+      </tr>
+      <tr>
+        <!-- <td>{{ regform.reg_password.label }}</td> -->
+        <td>{{ regform.reg_password(placeholder="Password") }}</td>
+      </tr>
+      <tr>
+        <!-- <td>&nbsp;</td> -->
+        <td><button type=submit name=action value=register>Register</button></td>
+      </tr>
+    </tbody>
+  </table>
+</form>
+{% endblock %}
 
-  <form method=post>
-    <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
-    <table>
-      <tbody>
-        <tr>
-          <td>{{ regform.reg_email.label }}</td>
-          <td>{{ regform.reg_email }}</td>
-        </tr>
-        <tr>
-          <td>{{ regform.reg_first.label }}</td>
-          <td>{{ regform.reg_first }}</td>
-        </tr>
-        <tr>
-          <td>{{ regform.reg_last.label }}</td>
-          <td>{{ regform.reg_last }}</td>
-        </tr>
-        <tr>
-          <td>{{ regform.reg_institution.label }}</td>
-          <td>{{ regform.reg_institution }}</td>
-        </tr>
-        <tr>
-          <td>{{ regform.reg_password.label }}</td>
-          <td>{{ regform.reg_password }}</td>
-        </tr>
-        <tr>
-          <td>&nbsp;</td>
-          <td><button type=submit name=action value=register>Register</button></td>
-        </tr>
-      </tbody>
-    </table>
-  </form>
-</div>
+{% block info %}
+<tr>
+  <th>Symbol</th>
+  <th>Asset</th>
+  <th>Bid</th>
+  <th>Ask</th>
+</tr>
+{% for asset in assets %}
+<tr>
+  <td>{{ asset.symbol }}</td>
+  <td>{{ asset.name }}</td>
+  <td>{{ "%.2f" | format(asset.bid) }}</td>
+  <td>{{ "%.2f" | format(asset.ask) }}</td>
+</tr>
+{% endfor %}
+{% endblock %}
+
+{% block right %}
+<h2>About</h2>
+<p>Description goes here.</p>
+<h2>Rules</h2>
+<p>Rules go here.</p>
 {% endblock %}

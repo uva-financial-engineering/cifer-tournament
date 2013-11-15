@@ -104,7 +104,13 @@ def index():
             session["user"] = User.query.filter_by(email=loginform.login_email.data).first().id
             return index()
 
-        return render_template("login.html", regform=regform, loginform=loginform)
+        stocks = dict((s.id, s.symbol) for s in Stock.query.all())
+        assets = AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.stock_id, AssetPrice.is_call, AssetPrice.strike).all()
+        for asset in assets:
+            asset.symbol = stocks[asset.stock_id]
+            asset.name = "Stock" if asset.strike < 0 else str(asset.strike) + (" Call" if asset.is_call else " Put")
+
+        return render_template("login.html", regform=regform, loginform=loginform, assets=assets)
 
 @app.route("/midnight")
 def midnight():
