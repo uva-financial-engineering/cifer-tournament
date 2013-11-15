@@ -6,7 +6,7 @@ import time
 from datetime import date, timedelta
 from decimal import Decimal
 
-from flask import render_template, g, redirect, request, session, send_from_directory, url_for
+from flask import render_template, flash, g, redirect, request, session, send_from_directory, url_for
 
 from app import app, db
 from models import User, Stock, AssetPrice, PortfolioAsset, Terror
@@ -87,8 +87,8 @@ def index():
         terrors = []
         for terror in Terror.query.filter_by(user_id=session["user"]).order_by(Terror.date).all():
             terrors.append((terror.date, terror.terror))
-        app.logger.debug(terrors)
 
+        flash_errors(tradeform)
         return render_template("index.html", user=user, date=TODAY, assets=assets, tradeform=tradeform, terrors=terrors)
     else:
         # Generate forms
@@ -110,6 +110,8 @@ def index():
             asset.symbol = stocks[asset.stock_id]
             asset.name = "Stock" if asset.strike < 0 else str(asset.strike) + (" Call" if asset.is_call else " Put")
 
+        flash_errors(regform)
+        flash_errors(loginform)
         return render_template("login.html", regform=regform, loginform=loginform, assets=assets)
 
 @app.route("/midnight")
@@ -162,3 +164,10 @@ def before_request():
 @app.teardown_request
 def teardown_request(exception=None):
     app.logger.debug("Time: " + str(time.time() - g.start))
+
+# Helpers
+
+def flash_errors(form):
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(error, "error")
