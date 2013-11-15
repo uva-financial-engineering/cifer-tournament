@@ -83,7 +83,7 @@ li {
     padding: 2px 8px;
     text-align: right;
 
-    &:first-child {
+    &:first-child, &:nth-child(2) {
       text-align: left;
     }
   }

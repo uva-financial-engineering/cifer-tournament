@@ -12,10 +12,17 @@ from app import app, db
 from models import User, Stock, AssetPrice, PortfolioAsset, Terror
 from forms import RegForm, LoginForm, TradeForm
 
+# Constants
+
 TODAY = "2013-08-16"
 LAST_WEEKDAY = "2013-08-16"
 RATE = Decimal("1.0000273976355823353284453")
 TARGET = Decimal("50000000")
+
+class Security:
+    STOCK, CALL, PUT = range(3)
+
+# Routes
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -35,25 +42,25 @@ def index():
             session.pop("user", None)
             return index()
         elif action == "trade" and tradeform.validate():
-            is_call = tradeform.trade_asset.data.split(",")[0] == "1"
+            security = tradeform.trade_asset.data.split(",")[0]
             strike = tradeform.trade_asset.data.split(",")[1]
             stock_id = tradeform.trade_asset.data.split(",")[2]
 
             # Get basket item (or create it if nonexistent)
-            portfolio_asset = PortfolioAsset.query.filter_by(user_id=session["user"], stock_id=stock_id, is_call=is_call, strike=strike).first()
+            portfolio_asset = PortfolioAsset.query.filter_by(user_id=session["user"], stock_id=stock_id, security=security, strike=strike).first()
             if portfolio_asset is None:
-                portfolio_asset = PortfolioAsset(session["user"], stock_id, is_call, strike, 0)
+                portfolio_asset = PortfolioAsset(session["user"], stock_id, security, strike, 0)
                 db.session.add(portfolio_asset)
 
             if tradeform.trade_position.data == "buy":
                 # Subtract from cash
-                user.cash -= Decimal("1.004") * tradeform.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, is_call=is_call, strike=strike, date=LAST_WEEKDAY).first().ask
+                user.cash -= Decimal("1.004") * tradeform.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().ask
 
                 # Add items to basket
                 portfolio_asset.qty += tradeform.trade_qty.data
             else:
                 # Add to cash
-                user.cash += Decimal("0.996" if portfolio_asset.qty > 0 else "0.99") * tradeform.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, is_call=is_call, strike=strike, date=LAST_WEEKDAY).first().bid
+                user.cash += Decimal("0.996" if portfolio_asset.qty > 0 else "0.99") * tradeform.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().bid
 
                 # Remove items from basket
                 portfolio_asset.qty -= tradeform.trade_qty.data
@@ -66,17 +73,24 @@ def index():
             db.session.commit()
 
         # Generate stock table
-        stocks = dict((s.id, s.symbol) for s in Stock.query.all())
-        assets = AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.stock_id, AssetPrice.is_call, AssetPrice.strike).all()
+        stocks = dict((s.id, (s.symbol, s.sector)) for s in Stock.query.all())
+        assets = AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all()
         app.logger.debug("Time: " + str(time.time() - g.start))
-        portfolio_assets = dict(((a.stock_id, a.is_call, a.strike), a.qty) for a in PortfolioAsset.query.filter_by(user_id=session["user"]).all())
+        portfolio_assets = dict(((a.stock_id, a.security, a.strike), a.qty) for a in PortfolioAsset.query.filter_by(user_id=session["user"]).all())
+
         for asset in assets:
-            asset.symbol = stocks[asset.stock_id]
-            asset.name = "Stock" if asset.strike < 0 else str(asset.strike) + (" Call" if asset.is_call else " Put")
+            asset.symbol, asset.sector = stocks[asset.stock_id]
+
+            if asset.security == Security.STOCK:
+                asset.name = "Stock"
+            elif asset.security == Security.CALL:
+                asset.name = str(asset.strike) + " Call"
+            else:
+                asset.name = str(asset.strike) + " Put"
 
             # Add portfolio data
-            if (asset.stock_id, asset.is_call, asset.strike) in portfolio_assets:
-                basket_shares = portfolio_assets[(asset.stock_id, asset.is_call, asset.strike)]
+            if (asset.stock_id, asset.security, asset.strike) in portfolio_assets:
+                basket_shares = portfolio_assets[(asset.stock_id, asset.security, asset.strike)]
                 asset.shares = basket_shares
                 asset.value = basket_shares * (asset.bid + Decimal("0.005"))
             else:
@@ -104,11 +118,18 @@ def index():
             session["user"] = User.query.filter_by(email=loginform.login_email.data).first().id
             return index()
 
-        stocks = dict((s.id, s.symbol) for s in Stock.query.all())
-        assets = AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.stock_id, AssetPrice.is_call, AssetPrice.strike).all()
+        stocks = dict((s.id, (s.symbol, s.sector)) for s in Stock.query.all())
+        assets = AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all()
+
         for asset in assets:
-            asset.symbol = stocks[asset.stock_id]
-            asset.name = "Stock" if asset.strike < 0 else str(asset.strike) + (" Call" if asset.is_call else " Put")
+            asset.symbol, asset.sector = stocks[asset.stock_id]
+
+            if asset.security == Security.STOCK:
+                asset.name = "Stock"
+            elif asset.security == Security.CALL:
+                asset.name = str(asset.strike) + " Call"
+            else:
+                asset.name = str(asset.strike) + " Put"
 
         flash_errors(regform)
         flash_errors(loginform)
@@ -125,7 +146,7 @@ def midnight():
     TODAY = (date(t.tm_year,t.tm_mon,t.tm_mday) + timedelta(1)).strftime("%Y-%m-%d")
 
     # Calculate most recent weekday
-    asset_prices = dict(((a.stock_id, a.is_call, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=TODAY).all())
+    asset_prices = dict(((a.stock_id, a.security, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=TODAY).all())
     if len(asset_prices):
         LAST_WEEKDAY = TODAY
 
@@ -137,7 +158,7 @@ def midnight():
 
         # Add value of basket items
         for portfolio_asset in PortfolioAsset.query.all():
-            portfolio_values[portfolio_asset.user_id] += portfolio_asset.qty * asset_prices[(portfolio_asset.stock_id, portfolio_asset.is_call, portfolio_asset.strike)]
+            portfolio_values[portfolio_asset.user_id] += portfolio_asset.qty * asset_prices[(portfolio_asset.stock_id, portfolio_asset.security, portfolio_asset.strike)]
 
         # Store tracking errors
         TARGET *= RATE

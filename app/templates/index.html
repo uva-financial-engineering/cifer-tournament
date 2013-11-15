@@ -53,11 +53,13 @@
 <tr class="merged">
   <th>&nbsp;</th>
   <th>&nbsp;</th>
+  <th>&nbsp;</th>
   <th colspan="2">Portfolio</th>
   <th colspan="2">Market</th>
 </tr>
 <tr>
   <th>Symbol</th>
+  <th>Sector</th>
   <th>Asset</th>
   <th>Shares</th>
   <th>Value</th>
@@ -65,8 +67,9 @@
   <th>Ask</th>
 </tr>
 {% for asset in assets %}
-<tr data-coord="{{ 1 if asset.is_call else 0 }},{{ asset.strike }},{{ asset.stock_id }}">
+<tr data-coord="{{ asset.security }},{{ asset.strike }},{{ asset.stock_id }}">
   <td>{{ asset.symbol }}</td>
+  <td>{{ asset.sector }}</td>
   <td>{{ asset.name }}</td>
   <td>{{ asset.shares }}</td>
   <td>{{ "%.2f" | format(asset.value) }}</td>
@@ -82,9 +85,9 @@
   $(".info-table tr").has("td").click(function() {
     $(".trade-table input, .trade-table button").prop("disabled", false);
     $("#trade_qty input").val("");
-    $("#trade_asset_name").html($($(this).find("td")[0]).html() + " " + $($(this).find("td")[1]).html());
+    $("#trade_asset_name").html($($(this).find("td")[0]).html() + " " + $($(this).find("td")[2]).html());
     $("#trade_asset").val($(this).attr("data-coord"));
-    $("label[for=trade_position-1]").html((parseFloat($($(this).find("td")[2]).html()) > 0) ? "Sell" : "Short sell");
+    $("label[for=trade_position-1]").html((parseFloat($($(this).find("td")[3]).html()) > 0) ? "Sell" : "Short sell");
   });
 </script>
 {% endblock %}
