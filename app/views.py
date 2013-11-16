@@ -76,6 +76,8 @@ def index():
 
             # Save to database
             db.session.commit()
+
+            flash("Trade successful.", "success")
         else:
             # Generate tracking error table
             terrors = [(t.date, t.terror) for t in Terror.query.filter_by(user_id=session["user"]).order_by(Terror.date).all()]
@@ -144,16 +146,6 @@ def midnight():
 def favicon():
     return send_from_directory(os.path.join(app.root_path, "static"),
        "favicon.ico", mimetype="image/vnd.microsoft.icon")
-
-# Timing code
-
-@app.before_request
-def before_request():
-    g.start = time.time()
-
-@app.teardown_request
-def teardown_request(exception=None):
-    app.logger.debug("Time: " + str(time.time() - g.start))
 
 # Helpers
 

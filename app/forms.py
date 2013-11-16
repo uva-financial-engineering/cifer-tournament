@@ -1,5 +1,5 @@
 from flask.ext.wtf import Form
-from wtforms import TextField, TextAreaField, SelectField, SubmitField, DecimalField, RadioField, validators, ValidationError, PasswordField
+from wtforms import TextField, TextAreaField, SelectField, SubmitField, DecimalField, RadioField, validators, ValidationError, PasswordField, HiddenField
 
 from app import db, app
 from models import User, Stock, AssetPrice
@@ -55,9 +55,9 @@ class LoginForm(Form):
 
 class TradeForm(Form):
     assets = AssetPrice.query.filter_by(date="2013-08-16").all()
-    trade_asset = TextField("Asset", [validators.InputRequired("No asset chosen.")])
-    trade_qty = DecimalField("Quantity", [validators.InputRequired("Enter a quantity.")])
-    trade_position = RadioField("Action", [validators.InputRequired("Enter a position.")], choices=[("buy", "Buy"), ("sell", "Sell")])
+    trade_asset = HiddenField("Asset", [validators.InputRequired("No asset chosen.")])
+    trade_qty = DecimalField("Quantity", [validators.InputRequired("No quantity chosen.")])
+    trade_position = RadioField("Action", [validators.InputRequired("No action chosen.")], choices=[("buy", "Buy"), ("sell", "Sell")])
 
     def __init__(self, *args, **kwargs):
         Form.__init__(self, *args, **kwargs)

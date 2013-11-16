@@ -10,8 +10,10 @@
 
 <h2>Trade</h2>
 <form id="tradeform" method=post>
-  <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
-  <div style="display:none">{{ tradeform.trade_asset }}</div>
+  <div style="display:none">
+    <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+    {{ tradeform.trade_asset }}
+  </div>
   <table class="trade-table">
     <tbody>
       <tr>

@@ -26,9 +26,19 @@ ul {
 
   li {
     list-style-type: none;
+  }
+}
+
+ul.flashes {
+  li {
+    padding-top: 5px;
 
     &.error {
       color: #d00;
+    }
+
+    &.success {
+      color: #080;
     }
   }
 }
