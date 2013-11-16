@@ -40,7 +40,6 @@ def index():
         # Handle POST requests
         if action == "logout":
             session.pop("user", None)
-            return index()
         elif action == "trade" and tradeform.validate():
             security = tradeform.trade_asset.data.split(",")[0]
             strike = tradeform.trade_asset.data.split(",")[1]
@@ -77,15 +76,15 @@ def index():
 
             # Save to database
             db.session.commit()
+        else:
+            # Generate tracking error table
+            terrors = [(t.date, t.terror) for t in Terror.query.filter_by(user_id=session["user"]).order_by(Terror.date).all()]
 
-        # Generate tracking error table
-        terrors = [(t.date, t.terror) for t in Terror.query.filter_by(user_id=session["user"]).order_by(Terror.date).all()]
+            # Generate transaction history table
+            transactions = Transaction.query.filter_by(user_id=session["user"]).order_by(Transaction.date).all()
 
-        # Generate transaction history table
-        transactions = Transaction.query.filter_by(user_id=session["user"]).order_by(Transaction.date).all()
-
-        flash_errors(tradeform)
-        return render_template("index.html", user=user, date=TODAY, tradeform=tradeform, terrors=terrors, transactions=transactions, js=generate_js(session["user"]))
+            flash_errors(tradeform)
+            return render_template("index.html", user=user, date=TODAY, tradeform=tradeform, terrors=terrors, transactions=transactions, js=generate_js(session["user"]))
     else:
         # Generate forms
         regform = RegForm(request.form)
@@ -98,11 +97,12 @@ def index():
             session["user"] = User.query.filter_by(email=regform.reg_email.data).first().id
         elif action == "login" and loginform.validate():
             session["user"] = User.query.filter_by(email=loginform.login_email.data).first().id
-            return index()
+        else:
+            flash_errors(regform)
+            flash_errors(loginform)
+            return render_template("login.html", regform=regform, loginform=loginform, js=generate_js(-1))
 
-        flash_errors(regform)
-        flash_errors(loginform)
-        return render_template("login.html", regform=regform, loginform=loginform, js=generate_js(-1))
+    return redirect(url_for("index"))
 
 @app.route("/midnight")
 def midnight():
