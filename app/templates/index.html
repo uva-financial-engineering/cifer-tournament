@@ -47,6 +47,18 @@
   {% endfor %}
   </tbody>
 </table>
+
+<h2>Transactions</h2>
+<table>
+  <tbody>
+  {% for t in transactions %}
+    <tr>
+      <td>{{ t.date }}:</td>
+      <td>{{ t.qty }} shares for {{ t.value }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
 {% endblock %}
 
 {% block info %}

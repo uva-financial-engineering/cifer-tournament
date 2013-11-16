@@ -5,18 +5,9 @@
   <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
   <table>
     <tbody>
-      <tr>
-        <!-- <td>{{ loginform.login_email.label }}</td> -->
-        <td>{{ loginform.login_email(placeholder="Email") }}</td>
-      </tr>
-      <tr>
-        <!-- <td>{{ loginform.login_password.label }}</td> -->
-        <td>{{ loginform.login_password(placeholder="Password") }}</td>
-      </tr>
-      <tr>
-        <!-- <td>&nbsp;</td> -->
-        <td><button type=submit name=action value=login>Sign In</button></td>
-      </tr>
+      <tr><td>{{ loginform.login_email(placeholder="Email") }}</td></tr>
+      <tr><td>{{ loginform.login_password(placeholder="Password") }}</td></tr>
+      <tr><td><button type=submit name=action value=login>Sign In</button></td></tr>
     </tbody>
   </table>
 </form>
@@ -25,30 +16,12 @@
   <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
   <table>
     <tbody>
-      <tr>
-        <!-- <td>{{ regform.reg_email.label }}</td> -->
-        <td>{{ regform.reg_email(placeholder="Email") }}</td>
-      </tr>
-      <tr>
-        <!-- <td>{{ regform.reg_first.label }}</td> -->
-        <td>{{ regform.reg_first(placeholder="First Name") }}</td>
-      </tr>
-      <tr>
-        <!-- <td>{{ regform.reg_last.label }}</td> -->
-        <td>{{ regform.reg_last(placeholder="Last Name") }}</td>
-      </tr>
-      <tr>
-        <!-- <td>{{ regform.reg_institution.label }}</td> -->
-        <td>{{ regform.reg_institution(placeholder="Institution") }}</td>
-      </tr>
-      <tr>
-        <!-- <td>{{ regform.reg_password.label }}</td> -->
-        <td>{{ regform.reg_password(placeholder="Password") }}</td>
-      </tr>
-      <tr>
-        <!-- <td>&nbsp;</td> -->
-        <td><button type=submit name=action value=register>Register</button></td>
-      </tr>
+      <tr><td>{{ regform.reg_email(placeholder="Email") }}</td></tr>
+      <tr><td>{{ regform.reg_first(placeholder="First Name") }}</td></tr>
+      <tr><td>{{ regform.reg_last(placeholder="Last Name") }}</td></tr>
+      <tr><td>{{ regform.reg_institution(placeholder="Institution") }}</td></tr>
+      <tr><td>{{ regform.reg_password(placeholder="Password") }}</td></tr>
+      <tr><td><button type=submit name=action value=register>Register</button></td></tr>
     </tbody>
   </table>
 </form>

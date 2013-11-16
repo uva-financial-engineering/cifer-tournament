@@ -27,8 +27,6 @@ INSERT INTO stocks (symbol, sector)
 VALUES """
 
 asset_prices_sql = """DROP TABLE IF EXISTS asset_prices;
-DROP TABLE IF EXISTS stock_prices;
-DROP TABLE IF EXISTS option_prices;
 CREATE TABLE asset_prices (
     id serial NOT NULL,
     date date NOT NULL,
@@ -47,9 +45,12 @@ CREATE TABLE transactions (
     id serial NOT NULL,
     date date NOT NULL,
     user_id integer NOT NULL,
-    stock_id integer NOT NULL,
     is_buy boolean NOT NULL,
+    stock_id integer NOT NULL,
+    security smallint NOT NULL,
+    strike numeric NOT NULL,
     qty numeric NOT NULL,
+    value numeric NOT NULL,
     CONSTRAINT transactions_pkey PRIMARY KEY (id)
 ) WITH (OIDS=FALSE);"""
 
@@ -63,7 +64,6 @@ CREATE TABLE terrors (
 ) WITH (OIDS=FALSE);"""
 
 portfolio_assets_sql = """DROP TABLE IF EXISTS portfolio_assets;
-DROP TABLE IF EXISTS basket_items;
 CREATE TABLE portfolio_assets (
     id serial NOT NULL,
     user_id integer NOT NULL,

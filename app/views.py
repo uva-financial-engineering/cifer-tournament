@@ -9,7 +9,7 @@ from decimal import Decimal
 from flask import render_template, flash, g, redirect, request, session, send_from_directory, url_for
 
 from app import app, db
-from models import User, Stock, AssetPrice, PortfolioAsset, Terror
+from models import User, Stock, AssetPrice, PortfolioAsset, Terror, Transaction
 from forms import RegForm, LoginForm, TradeForm
 
 # Constants
@@ -45,6 +45,7 @@ def index():
             security = tradeform.trade_asset.data.split(",")[0]
             strike = tradeform.trade_asset.data.split(",")[1]
             stock_id = tradeform.trade_asset.data.split(",")[2]
+            is_buy = tradeform.trade_position.data == "buy"
 
             # Get basket item (or create it if nonexistent)
             portfolio_asset = PortfolioAsset.query.filter_by(user_id=session["user"], stock_id=stock_id, security=security, strike=strike).first()
@@ -52,15 +53,17 @@ def index():
                 portfolio_asset = PortfolioAsset(session["user"], stock_id, security, strike, 0)
                 db.session.add(portfolio_asset)
 
-            if tradeform.trade_position.data == "buy":
+            if is_buy:
                 # Subtract from cash
-                user.cash -= Decimal("1.004") * tradeform.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().ask
+                value = tradeform.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().ask
+                user.cash -= Decimal("1.004") * value
 
                 # Add items to basket
                 portfolio_asset.qty += tradeform.trade_qty.data
             else:
                 # Add to cash
-                user.cash += Decimal("0.996" if portfolio_asset.qty > 0 else "0.99") * tradeform.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().bid
+                value = tradeform.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().bid
+                user.cash += Decimal("0.996" if portfolio_asset.qty > 0 else "0.99") * value
 
                 # Remove items from basket
                 portfolio_asset.qty -= tradeform.trade_qty.data
@@ -69,14 +72,20 @@ def index():
             if portfolio_asset.qty == 0:
                 db.session.delete(portfolio_asset)
 
+            # Add transaction record
+            db.session.add(Transaction(date=LAST_WEEKDAY, user_id=session["user"], is_buy=is_buy, stock_id=stock_id, security=security, strike=strike, qty=tradeform.trade_qty.data, value=value))
+
             # Save to database
             db.session.commit()
 
         # Generate tracking error table
         terrors = [(t.date, t.terror) for t in Terror.query.filter_by(user_id=session["user"]).order_by(Terror.date).all()]
 
+        # Generate transaction history table
+        transactions = Transaction.query.filter_by(user_id=session["user"]).order_by(Transaction.date).all()
+
         flash_errors(tradeform)
-        return render_template("index.html", user=user, date=TODAY, tradeform=tradeform, terrors=terrors, js=generate_js(session["user"]))
+        return render_template("index.html", user=user, date=TODAY, tradeform=tradeform, terrors=terrors, transactions=transactions, js=generate_js(session["user"]))
     else:
         # Generate forms
         regform = RegForm(request.form)
@@ -175,14 +184,13 @@ def generate_js(user):
         if authenticated:
             # Add portfolio info
             if (a.stock_id, a.security, a.strike) in portfolio_assets:
-                basket_shares = portfolio_assets[(a.stock_id, a.security, a.strike)]
-                a.shares = basket_shares
-                a.value = basket_shares * (a.bid + Decimal("0.005"))
+                a.qty = portfolio_assets[(a.stock_id, a.security, a.strike)]
+                a.value = a.qty * (a.bid + Decimal("0.005"))
             else:
-                a.shares = 0
+                a.qty = 0
                 a.value = 0
 
-            info_array.append(int(a.shares))
+            info_array.append(int(a.qty))
             info_array.append("%.2f" % float(a.value))
 
         info.append(info_array)

@@ -58,7 +58,7 @@ class PortfolioAsset(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer)
     stock_id = db.Column(db.Integer)
-    security = db.Column(db.Boolean)
+    security = db.Column(db.SmallInteger)
     strike = db.Column(db.Numeric)
     qty = db.Column(db.Numeric)
 
@@ -74,3 +74,26 @@ class Terror(db.Model):
     date = db.Column(db.DateTime)
     user_id = db.Column(db.Integer)
     terror = db.Column(db.Numeric)
+
+class Transaction(db.Model):
+    __tablename__ = "transactions"
+
+    def __init__(self, date, user_id, is_buy, stock_id, security, strike, qty, value):
+        self.date = date
+        self.user_id = user_id
+        self.is_buy = is_buy
+        self.stock_id = stock_id
+        self.security = security
+        self.strike = strike
+        self.qty = qty
+        self.value = value
+
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.DateTime)
+    user_id = db.Column(db.Integer)
+    is_buy = db.Column(db.Boolean)
+    stock_id = db.Column(db.Integer)
+    security = db.Column(db.SmallInteger)
+    strike = db.Column(db.Numeric)
+    qty = db.Column(db.Numeric)
+    value = db.Column(db.Numeric)
