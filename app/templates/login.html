@@ -62,15 +62,6 @@
   <th>Bid</th>
   <th>Ask</th>
 </tr>
-{% for asset in assets %}
-<tr>
-  <td>{{ asset.symbol }}</td>
-  <td>{{ asset.sector }}</td>
-  <td>{{ asset.name }}</td>
-  <td>{{ "%.2f" | format(asset.bid) }}</td>
-  <td>{{ "%.2f" | format(asset.ask) }}</td>
-</tr>
-{% endfor %}
 {% endblock %}
 
 {% block right %}

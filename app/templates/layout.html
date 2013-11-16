@@ -39,8 +39,8 @@
 </div>
 <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='jquery-scrolltofixed-min.js') }}"></script>
-<script>
-  $(".left-sidebar").scrollToFixed();
-</script>
-{% block js %}{% endblock %}
+<script type="text/javascript" src="{{ url_for('static', filename='underscore-min.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='backbone-min.js') }}"></script>
+<script>{{ js | safe }}</script>
+<script type="text/javascript" src="{{ url_for('static', filename='main.js') }}"></script>
 </body>

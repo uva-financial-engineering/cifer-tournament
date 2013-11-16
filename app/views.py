@@ -16,7 +16,7 @@ from forms import RegForm, LoginForm, TradeForm
 
 TODAY = "2013-08-16"
 LAST_WEEKDAY = "2013-08-16"
-RATE = Decimal("1.0000273976355823353284453")
+RATE = Decimal("1.00002739763558")
 TARGET = Decimal("50000000")
 
 class Security:
@@ -72,38 +72,41 @@ def index():
             # Save to database
             db.session.commit()
 
-        # Generate stock table
-        stocks = dict((s.id, (s.symbol, s.sector)) for s in Stock.query.all())
-        assets = AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all()
-        app.logger.debug("Time: " + str(time.time() - g.start))
+        # Get portfolio assets
         portfolio_assets = dict(((a.stock_id, a.security, a.strike), a.qty) for a in PortfolioAsset.query.filter_by(user_id=session["user"]).all())
 
-        for asset in assets:
-            asset.symbol, asset.sector = stocks[asset.stock_id]
-
-            if asset.security == Security.STOCK:
-                asset.name = "Stock"
-            elif asset.security == Security.CALL:
-                asset.name = str(asset.strike) + " Call"
-            else:
-                asset.name = str(asset.strike) + " Put"
-
-            # Add portfolio data
-            if (asset.stock_id, asset.security, asset.strike) in portfolio_assets:
-                basket_shares = portfolio_assets[(asset.stock_id, asset.security, asset.strike)]
-                asset.shares = basket_shares
-                asset.value = basket_shares * (asset.bid + Decimal("0.005"))
-            else:
-                asset.shares = 0
-                asset.value = 0
-
         # Generate tracking error table
-        terrors = []
-        for terror in Terror.query.filter_by(user_id=session["user"]).order_by(Terror.date).all():
-            terrors.append((terror.date, terror.terror))
+        terrors = [(t.date, t.terror) for t in Terror.query.filter_by(user_id=session["user"]).order_by(Terror.date).all()]
+
+        # Build stock table
+        stocks = [[str(s.symbol), str(s.sector)] for s in Stock.query.order_by(Stock.id).all()]
+
+        info = []
+        for a in AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all():
+            a.symbol, a.sector = stocks[a.stock_id - 1]
+
+            if a.security == Security.STOCK:
+                a.name = "Stock"
+            elif a.security == Security.CALL:
+                a.name = str(a.strike) + " Call"
+            else:
+                a.name = str(a.strike) + " Put"
+
+            # Add portfolio info
+            if (a.stock_id, a.security, a.strike) in portfolio_assets:
+                basket_shares = portfolio_assets[(a.stock_id, a.security, a.strike)]
+                a.shares = basket_shares
+                a.value = basket_shares * (a.bid + Decimal("0.005"))
+            else:
+                a.shares = 0
+                a.value = 0
+
+            info.append([a.stock_id, float(a.security), float(a.strike), float(a.bid), float(a.ask), float(a.shares), float(a.value)])
+
+        js = ("AUTHENTICATED=true;STOCKS=" + str(stocks) + ";INFO=" + str(info) + ";").replace(" ", "").replace(".0,", ",").replace(".0]", "]")
 
         flash_errors(tradeform)
-        return render_template("index.html", user=user, date=TODAY, assets=assets, tradeform=tradeform, terrors=terrors)
+        return render_template("index.html", user=user, date=TODAY, tradeform=tradeform, terrors=terrors, js=js)
     else:
         # Generate forms
         regform = RegForm(request.form)
@@ -118,22 +121,27 @@ def index():
             session["user"] = User.query.filter_by(email=loginform.login_email.data).first().id
             return index()
 
-        stocks = dict((s.id, (s.symbol, s.sector)) for s in Stock.query.all())
-        assets = AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all()
+        # Build stock table
+        stocks = [[str(s.symbol), str(s.sector)] for s in Stock.query.order_by(Stock.id).all()]
 
-        for asset in assets:
-            asset.symbol, asset.sector = stocks[asset.stock_id]
+        info = []
+        for a in AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all():
+            a.symbol, a.sector = stocks[a.stock_id - 1]
 
-            if asset.security == Security.STOCK:
-                asset.name = "Stock"
-            elif asset.security == Security.CALL:
-                asset.name = str(asset.strike) + " Call"
+            if a.security == Security.STOCK:
+                a.name = "Stock"
+            elif a.security == Security.CALL:
+                a.name = str(a.strike) + " Call"
             else:
-                asset.name = str(asset.strike) + " Put"
+                a.name = str(a.strike) + " Put"
+
+            info.append([a.stock_id, float(a.security), float(a.strike), float(a.bid), float(a.ask)])
+
+        js = ("AUTHENTICATED=false;STOCKS=" + str(stocks) + ";INFO=" + str(info) + ";").replace(" ", "").replace(".0,", ",").replace(".0]", "]")
 
         flash_errors(regform)
         flash_errors(loginform)
-        return render_template("login.html", regform=regform, loginform=loginform, assets=assets)
+        return render_template("login.html", regform=regform, loginform=loginform, js=js)
 
 @app.route("/midnight")
 def midnight():
