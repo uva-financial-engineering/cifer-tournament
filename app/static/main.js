@@ -16,25 +16,36 @@ var EntryView = Backbone.View.extend({
     }
   },
   render: function() {
-    var html = "<td>" +
-      this.model.get("symbol") +
-      "</td><td>" +
-      this.model.get("sector") +
-      "</td><td>" +
-      this.model.get("security_name") +
-      "</td><td>" +
-      this.model.get("bid") +
-      "</td><td>" +
-      this.model.get("ask") +
-      "</td>";
     if (AUTHENTICATED) {
-      html += "<td>" +
+      this.$el.addClass("entry");
+      this.$el.html("<td>" +
+        this.model.get("symbol") +
+        "</td><td>" +
+        this.model.get("sector") +
+        "</td><td>" +
+        this.model.get("security_name") +
+        "</td><td>" +
+        this.model.get("bid") +
+        "</td><td>" +
+        this.model.get("ask") +
+        "</td><td>" +
         this.model.get("shares") +
         "</td><td>" +
         this.model.get("value") +
-        "</td>";
+        "</td>");
+    } else {
+      this.$el.html("<td>" +
+        this.model.get("symbol") +
+        "</td><td>" +
+        this.model.get("sector") +
+        "</td><td>" +
+        this.model.get("security_name") +
+        "</td><td>" +
+        this.model.get("bid") +
+        "</td><td>" +
+        this.model.get("ask") +
+        "</td>");
     }
-    this.$el.html(html);
     return this;
   }
 });

@@ -88,8 +88,9 @@ li {
     }
   }
 
-  tr:hover {
+  tr.entry:hover {
     background: #ddd;
+    cursor: pointer;
 
     td:first-child {
       border-radius: 6px 0 0 6px;
@@ -102,10 +103,6 @@ li {
 
   tr.merged th {
     text-align: center;
-  }
-
-  td {
-    cursor: pointer;
   }
 }
 
