@@ -37,6 +37,7 @@
 
 {% block right %}
 <h2>Tracking Errors</h2>
+{% if terrors %}
 <table>
   <tbody>
   {% for terror in terrors %}
@@ -47,8 +48,12 @@
   {% endfor %}
   </tbody>
 </table>
+{% else %}
+<p>No data.</p>
+{% endif %}
 
 <h2>Transactions</h2>
+{% if transactions %}
 <table>
   <tbody>
   {% for t in transactions %}
@@ -59,6 +64,9 @@
   {% endfor %}
   </tbody>
 </table>
+{% else %}
+<p>No data.</p>
+{% endif %}
 {% endblock %}
 
 {% block info %}

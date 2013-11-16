@@ -6,16 +6,16 @@ from models import User, Stock, AssetPrice
 
 class RegForm(Form):
     reg_email = TextField("Email", [
-        validators.InputRequired("Please enter your email address."),
-        validators.Email("Please enter your email address.")])
+        validators.InputRequired("Email address required."),
+        validators.Email("Not a valid email address.")])
     reg_first = TextField("First Name", [
-        validators.InputRequired("Please enter your first name.")])
+        validators.InputRequired("First name required.")])
     reg_last = TextField("Last Name", [
-        validators.InputRequired("Please enter your last name.")])
+        validators.InputRequired("Last name required.")])
     reg_institution = TextField("Institution", [
-        validators.InputRequired("Please enter your institution.")])
+        validators.InputRequired("Institution required.")])
     reg_password = PasswordField("Password", [
-        validators.InputRequired("Please enter a password.")])
+        validators.InputRequired("Password required.")])
     submit = SubmitField("Create account")
 
     def __init__(self, *args, **kwargs):
@@ -34,9 +34,9 @@ class RegForm(Form):
 class LoginForm(Form):
     login_email = TextField("Email", [
         validators.InputRequired("Please enter your email address."),
-        validators.Email("Please enter your email address.")])
+        validators.Email("Email address missing.")])
     login_password = PasswordField("Password", [
-        validators.InputRequired("Please enter a password.")])
+        validators.InputRequired("Password missing.")])
     submit = SubmitField("Create account")
 
     def __init__(self, *args, **kwargs):
@@ -50,14 +50,14 @@ class LoginForm(Form):
         if user and user.check_password(self.login_password.data):
             return True
         else:
-            self.login_email.errors.append("Invalid e-mail or password")
+            self.login_email.errors.append("Invalid email or password.")
             return False
 
 class TradeForm(Form):
     assets = AssetPrice.query.filter_by(date="2013-08-16").all()
     trade_asset = TextField("Asset", [validators.InputRequired("No asset chosen.")])
     trade_qty = DecimalField("Quantity", [validators.InputRequired("Enter a quantity.")])
-    trade_position = RadioField("Action", [validators.InputRequired("Enter a position")], choices=[("buy", "Buy"), ("sell", "Sell")])
+    trade_position = RadioField("Action", [validators.InputRequired("Enter a position.")], choices=[("buy", "Buy"), ("sell", "Sell")])
 
     def __init__(self, *args, **kwargs):
         Form.__init__(self, *args, **kwargs)
