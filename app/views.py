@@ -49,7 +49,7 @@ def index():
             # Get basket item (or create it if nonexistent)
             portfolio_asset = PortfolioAsset.query.filter_by(user_id=session["user"], stock_id=stock_id, security=security, strike=strike).first()
             if portfolio_asset is None:
-                portfolio_asset = PortfolioAsset(session["user"], stock_id, security, strike, 0)
+                portfolio_asset = PortfolioAsset(session["user"], stock_id, security, strike, 0, True)
                 db.session.add(portfolio_asset)
 
             if is_buy:
@@ -161,7 +161,7 @@ def generate_js(user):
     if user > 0:
         authenticated = True;
         # Get portfolio assets
-        portfolio_assets = dict(((a.stock_id, a.security, a.strike), a.qty) for a in PortfolioAsset.query.filter_by(user_id=session["user"]).all())
+        portfolio_assets = dict(((a.stock_id, a.security, a.strike), (a.qty, a.liquid)) for a in PortfolioAsset.query.filter_by(user_id=session["user"]).all())
     else:
         authenticated = False;
 
@@ -184,12 +184,14 @@ def generate_js(user):
         if authenticated:
             # Add portfolio info
             if (a.stock_id, a.security, a.strike) in portfolio_assets:
-                a.qty = portfolio_assets[(a.stock_id, a.security, a.strike)]
+                a.qty, a.liquid = portfolio_assets[(a.stock_id, a.security, a.strike)]
                 a.value = a.qty * (a.bid + Decimal("0.005"))
             else:
+                a.liquid = 1
                 a.qty = 0
                 a.value = 0
 
+            info_array.append(1 if a.liquid else 0)
             info_array.append(int(a.qty))
             info_array.append("%.2f" % float(a.value))
 

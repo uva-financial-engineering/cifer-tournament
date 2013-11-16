@@ -33,8 +33,8 @@ class RegForm(Form):
 
 class LoginForm(Form):
     login_email = TextField("Email", [
-        validators.InputRequired("Please enter your email address."),
-        validators.Email("Email address missing.")])
+        validators.InputRequired("Email address missing."),
+        validators.Email("Not a valid email.")])
     login_password = PasswordField("Password", [
         validators.InputRequired("Password missing.")])
     submit = SubmitField("Create account")

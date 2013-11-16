@@ -6,17 +6,22 @@ var Entry = Backbone.Model.extend({});
 
 var EntryView = Backbone.View.extend({
   tagName: "tr",
+  defaults: {
+    liquid: 1
+  },
   initialize: function() {
     _.bindAll(this, "render");
   },
   events: {
     click: function() {
-      this.model.get("app").set({selectedEntry: this.model});
+      if (this.model.get("liquid") === 1) {
+        this.model.get("app").set({selectedEntry: this.model});
+      }
     }
   },
   render: function() {
     if (AUTHENTICATED) {
-      this.$el.addClass("entry");
+      this.$el.addClass((this.model.get("liquid") === 1) ? "liquid" : "illiquid");
       this.$el.html("<td>" +
         this.model.get("symbol") +
         "</td><td>" +
@@ -100,8 +105,9 @@ var AppView = Backbone.View.extend({
         strike: INFO[i][2],
         bid: INFO[i][3],
         ask: INFO[i][4],
-        shares: INFO[i][5],
-        value: INFO[i][6],
+        liquid: INFO[i][5],
+        shares: INFO[i][6],
+        value: INFO[i][7],
         app: this.model
       }));
     }

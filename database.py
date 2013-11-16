@@ -71,23 +71,24 @@ CREATE TABLE portfolio_assets (
     security smallint NOT NULL,
     strike numeric NOT NULL,
     qty numeric NOT NULL,
+    liquid boolean NOT NULL,
     CONSTRAINT portfolio_assets_pkey PRIMARY KEY (id)
 ) WITH (OIDS=FALSE);
-INSERT INTO portfolio_assets (user_id, stock_id, security, strike, qty) VALUES
-    (1, 5, 0, -1, 300000),
-    (1, 5, 1, 12, 800000),
-    (1, 5, 1, 12.5, 850000),
-    (1, 11, 0, -1, 150000),
-    (1, 11, 2, 12.5, 100000),
-    (1, 11, 2, 13.5, 600000),
-    (1, 11, 2, 14.5, 1000000),
-    (1, 2, 0, -1, -5000),
-    (1, 7, 0, -1, 100000),
-    (1, 7, 2, 43, 2000000),
-    (1, 12, 2, 68, 1000000),
-    (1, 12, 1, 64, 700000),
-    (1, 12, 1, 62, 450000),
-    (1, 1, 0, -1, 800000);
+INSERT INTO portfolio_assets (user_id, stock_id, security, strike, qty, liquid) VALUES
+    (1, 5, 0, -1, 300000, FALSE),
+    (1, 5, 1, 12, 800000, FALSE),
+    (1, 5, 1, 12.5, 850000, FALSE),
+    (1, 11, 0, -1, 150000, FALSE),
+    (1, 11, 2, 12.5, 100000, FALSE),
+    (1, 11, 2, 13.5, 600000, FALSE),
+    (1, 11, 2, 14.5, 1000000, FALSE),
+    (1, 2, 0, -1, -5000, FALSE),
+    (1, 7, 0, -1, 100000, FALSE),
+    (1, 7, 2, 43, 2000000, FALSE),
+    (1, 12, 2, 68, 1000000, FALSE),
+    (1, 12, 1, 64, 700000, FALSE),
+    (1, 12, 1, 62, 450000, FALSE),
+    (1, 1, 0, -1, 800000, FALSE);
 """
 
 if __name__ == "__main__":

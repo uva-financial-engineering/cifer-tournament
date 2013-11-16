@@ -97,7 +97,11 @@ ol {
     }
   }
 
-  tr.entry:hover {
+  tr.illiquid {
+    color: #999;
+  }
+
+  tr.liquid:hover {
     background: #ddd;
     cursor: pointer;
 

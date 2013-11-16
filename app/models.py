@@ -48,12 +48,13 @@ class AssetPrice(db.Model):
 class PortfolioAsset(db.Model):
     __tablename__ = "portfolio_assets"
 
-    def __init__(self, user_id, stock_id, security, strike, qty):
+    def __init__(self, user_id, stock_id, security, strike, qty, liquid):
         self.user_id = user_id
         self.stock_id = stock_id
         self.security = security
         self.strike = strike
         self.qty = qty
+        self.liquid = liquid
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer)
@@ -61,6 +62,7 @@ class PortfolioAsset(db.Model):
     security = db.Column(db.SmallInteger)
     strike = db.Column(db.Numeric)
     qty = db.Column(db.Numeric)
+    liquid = db.Column(db.Boolean)
 
 class Terror(db.Model):
     __tablename__ = "terrors"
