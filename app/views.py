@@ -72,41 +72,11 @@ def index():
             # Save to database
             db.session.commit()
 
-        # Get portfolio assets
-        portfolio_assets = dict(((a.stock_id, a.security, a.strike), a.qty) for a in PortfolioAsset.query.filter_by(user_id=session["user"]).all())
-
         # Generate tracking error table
         terrors = [(t.date, t.terror) for t in Terror.query.filter_by(user_id=session["user"]).order_by(Terror.date).all()]
 
-        # Build stock table
-        stocks = [[str(s.symbol), str(s.sector)] for s in Stock.query.order_by(Stock.id).all()]
-
-        info = []
-        for a in AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all():
-            a.symbol, a.sector = stocks[a.stock_id - 1]
-
-            if a.security == Security.STOCK:
-                a.name = "Stock"
-            elif a.security == Security.CALL:
-                a.name = str(a.strike) + " Call"
-            else:
-                a.name = str(a.strike) + " Put"
-
-            # Add portfolio info
-            if (a.stock_id, a.security, a.strike) in portfolio_assets:
-                basket_shares = portfolio_assets[(a.stock_id, a.security, a.strike)]
-                a.shares = basket_shares
-                a.value = basket_shares * (a.bid + Decimal("0.005"))
-            else:
-                a.shares = 0
-                a.value = 0
-
-            info.append([a.stock_id, float(a.security), float(a.strike), float(a.bid), float(a.ask), float(a.shares), float(a.value)])
-
-        js = ("AUTHENTICATED=true;STOCKS=" + str(stocks) + ";INFO=" + str(info) + ";").replace(" ", "").replace(".0,", ",").replace(".0]", "]")
-
         flash_errors(tradeform)
-        return render_template("index.html", user=user, date=TODAY, tradeform=tradeform, terrors=terrors, js=js)
+        return render_template("index.html", user=user, date=TODAY, tradeform=tradeform, terrors=terrors, js=generate_js(session["user"]))
     else:
         # Generate forms
         regform = RegForm(request.form)
@@ -121,27 +91,9 @@ def index():
             session["user"] = User.query.filter_by(email=loginform.login_email.data).first().id
             return index()
 
-        # Build stock table
-        stocks = [[str(s.symbol), str(s.sector)] for s in Stock.query.order_by(Stock.id).all()]
-
-        info = []
-        for a in AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all():
-            a.symbol, a.sector = stocks[a.stock_id - 1]
-
-            if a.security == Security.STOCK:
-                a.name = "Stock"
-            elif a.security == Security.CALL:
-                a.name = str(a.strike) + " Call"
-            else:
-                a.name = str(a.strike) + " Put"
-
-            info.append([a.stock_id, float(a.security), float(a.strike), float(a.bid), float(a.ask)])
-
-        js = ("AUTHENTICATED=false;STOCKS=" + str(stocks) + ";INFO=" + str(info) + ";").replace(" ", "").replace(".0,", ",").replace(".0]", "]")
-
         flash_errors(regform)
         flash_errors(loginform)
-        return render_template("login.html", regform=regform, loginform=loginform, js=js)
+        return render_template("login.html", regform=regform, loginform=loginform, js=generate_js(-1))
 
 @app.route("/midnight")
 def midnight():
@@ -195,6 +147,47 @@ def teardown_request(exception=None):
     app.logger.debug("Time: " + str(time.time() - g.start))
 
 # Helpers
+
+def generate_js(user):
+    if user > 0:
+        authenticated = True;
+        # Get portfolio assets
+        portfolio_assets = dict(((a.stock_id, a.security, a.strike), a.qty) for a in PortfolioAsset.query.filter_by(user_id=session["user"]).all())
+    else:
+        authenticated = False;
+
+    # Build stock table
+    stocks = [[str(s.symbol), str(s.sector)] for s in Stock.query.order_by(Stock.id).all()]
+
+    info = []
+    for a in AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all():
+        a.symbol, a.sector = stocks[a.stock_id - 1]
+
+        if a.security == Security.STOCK:
+            a.name = "Stock"
+        elif a.security == Security.CALL:
+            a.name = str(a.strike) + " Call"
+        else:
+            a.name = str(a.strike) + " Put"
+
+        info_array = [a.stock_id, int(a.security), float(a.strike), "%.2f" % float(a.bid), "%.2f" % float(a.ask)]
+
+        if authenticated:
+            # Add portfolio info
+            if (a.stock_id, a.security, a.strike) in portfolio_assets:
+                basket_shares = portfolio_assets[(a.stock_id, a.security, a.strike)]
+                a.shares = basket_shares
+                a.value = basket_shares * (a.bid + Decimal("0.005"))
+            else:
+                a.shares = 0
+                a.value = 0
+
+            info_array.append(int(a.shares))
+            info_array.append("%.2f" % float(a.value))
+
+        info.append(info_array)
+
+    return ("AUTHENTICATED=" + str(authenticated).lower() + ";STOCKS=" + str(stocks) + ";INFO=" + str(info) + ";").replace(" ", "")
 
 def flash_errors(form):
     for field, errors in form.errors.items():

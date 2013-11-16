@@ -1,9 +1,8 @@
-/* global $, _, Backbone, INFO, STOCKS */
+/* global $, _, Backbone, AUTHENTICATED, STOCKS, INFO */
 (function() {
 "use strict";
 
-var Entry = Backbone.Model.extend({
-});
+var Entry = Backbone.Model.extend({});
 
 var EntryView = Backbone.View.extend({
   tagName: "tr",
@@ -50,9 +49,7 @@ var EntryView = Backbone.View.extend({
   }
 });
 
-var Table = Backbone.Collection.extend({
-  model: Entry
-});
+var Table = Backbone.Collection.extend({model: Entry});
 
 var App = Backbone.Model.extend({
   defaults: {
