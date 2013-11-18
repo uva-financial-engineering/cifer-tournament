@@ -47,7 +47,7 @@ ol {
   padding: 0 0 0 20px;
 
   li {
-    padding: 5px;
+    padding: 5px 0;
   }
 }
 
@@ -67,19 +67,15 @@ ol {
   text-align: center;
 }
 
-.trade-table {
-  td {
-    vertical-align: top;
+.login-table, .registration-table {
+  input, button {
+    width: 150px;
   }
 }
 
-.action-table {
-  th {
-    text-align: left;
-  }
-
-  td:last-child {
-    text-align: right;
+.trade-table {
+  td {
+    vertical-align: top;
   }
 }
 

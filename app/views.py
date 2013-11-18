@@ -79,14 +79,11 @@ def index():
 
             flash("Trade successful.", "success")
         else:
-            # Generate tracking error table
-            terrors = [(t.date, t.terror) for t in Terror.query.filter_by(user_id=session["user"]).order_by(Terror.date).all()]
-
             # Generate transaction history table
             transactions = Transaction.query.filter_by(user_id=session["user"]).order_by(Transaction.date).all()
 
             flash_errors(tradeform)
-            return render_template("index.html", user=user, date=TODAY, tradeform=tradeform, terrors=terrors, transactions=transactions, js=generate_js(session["user"]))
+            return render_template("index.html", user=user, date=TODAY, tradeform=tradeform, transactions=transactions, js=generate_js(session["user"]))
     else:
         # Generate forms
         regform = RegForm(request.form)
@@ -150,10 +147,22 @@ def favicon():
 # Helpers
 
 def generate_js(user):
+    js = ""
+
     if user > 0:
         authenticated = True;
         # Get portfolio assets
         portfolio_assets = dict(((a.stock_id, a.security, a.strike), (a.qty, a.liquid)) for a in PortfolioAsset.query.filter_by(user_id=session["user"]).all())
+
+        # Generate tracking error table
+        terrors = [[], [], []]
+        day = 0
+        for t in Terror.query.filter_by(user_id=session["user"]).order_by(Terror.date).all():
+            terrors[0].append(day)
+            terrors[1].append(t.date.strftime("%d-%b"))
+            terrors[2].append(int(t.terror))
+            day += 1
+        js = "TERRORS=" + str(terrors) + ";"
     else:
         authenticated = False;
 
@@ -189,7 +198,7 @@ def generate_js(user):
 
         info.append(info_array)
 
-    return ("AUTHENTICATED=" + str(authenticated).lower() + ";STOCKS=" + str(stocks) + ";INFO=" + str(info) + ";").replace(" ", "")
+    return (js + "AUTHENTICATED=" + str(authenticated).lower() + ";STOCKS=" + str(stocks) + ";INFO=" + str(info) + ";").replace(" ", "")
 
 def flash_errors(form):
     for field, errors in form.errors.items():

@@ -17,15 +17,15 @@
   <table class="trade-table">
     <tbody>
       <tr>
-        <td>Asset</td>
+        <td>Asset:</td>
         <td id="trade_asset_name">(none selected)</td>
       </tr>
       <tr>
-        <td>{{ tradeform.trade_qty.label }}</td>
+        <td>{{ tradeform.trade_qty.label }}:</td>
         <td>{{ tradeform.trade_qty(style="width:90px") }}</td>
       </tr>
       <tr>
-        <td>Action</td>
+        <td>Action:</td>
         <td>{{ tradeform.trade_position }}</td>
       </tr>
       <tr>
@@ -39,20 +39,8 @@
 
 {% block right %}
 <h2>Tracking Errors</h2>
-{% if terrors %}
-<table>
-  <tbody>
-  {% for terror in terrors %}
-    <tr>
-      <td>{{ terror[0] }}:</td>
-      <td>{{ "%.4f" | format(terror[1]) }}</td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<p>No data.</p>
-{% endif %}
+<div id="holder"></div>
+<p id="terror-info">&nbsp;</p>
 
 <h2>Transactions</h2>
 {% if transactions %}

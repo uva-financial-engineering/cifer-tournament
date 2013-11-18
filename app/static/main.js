@@ -117,12 +117,23 @@ var AppView = Backbone.View.extend({
     this.render();
   },
   render: function() {
+    // Render asset table
     var infotable = $(".info-table").eq(0);
     for (var i = 0; i < this.model.get("table").length; ++i) {
       var entryView = new EntryView({
         model: this.model.get("table").models[i]
       });
       infotable.append(entryView.render().el);
+    }
+
+    if (AUTHENTICATED) {
+      // Render transaction error graph
+      var r = Raphael("holder", 220, 120);
+      var lines = r.linechart(0, 0, 200, 120, TERRORS[0], TERRORS[2], { nostroke: false, axis: "0 0 0 0", symbol: "circle", smooth: true }).hoverColumn(function() {
+        $("#terror-info").html(TERRORS[1][this.axis] + ": " + this.values[0]);
+      }, function() {
+        $("#terror-info").html("&nbsp;");
+      }).symbols.attr({ r: 3 });
     }
   }
 });

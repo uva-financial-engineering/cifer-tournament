@@ -3,7 +3,7 @@
 {% block left %}
 <form method=post>
   <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
-  <table>
+  <table class="login-table">
     <tbody>
       <tr><td>{{ loginform.login_email(placeholder="Email") }}</td></tr>
       <tr><td>{{ loginform.login_password(placeholder="Password") }}</td></tr>
@@ -14,7 +14,7 @@
 <p>&nbsp;</p>
 <form method=post>
   <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
-  <table>
+  <table class="registration-table">
     <tbody>
       <tr><td>{{ regform.reg_email(placeholder="Email") }}</td></tr>
       <tr><td>{{ regform.reg_first(placeholder="First Name") }}</td></tr>
