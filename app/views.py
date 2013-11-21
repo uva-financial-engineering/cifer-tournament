@@ -6,7 +6,7 @@ import time
 from datetime import date, timedelta
 from decimal import Decimal
 
-from flask import render_template, flash, g, redirect, request, session, send_from_directory, url_for
+from flask import render_template, flash, redirect, request, session, send_from_directory, url_for
 
 from app import app, db
 from models import User, Stock, AssetPrice, PortfolioAsset, Terror, Transaction
@@ -68,7 +68,7 @@ def midnight():
 
     # Calculate new date
     t = time.strptime(TODAY, "%Y-%m-%d")
-    TODAY = (date(t.tm_year,t.tm_mon,t.tm_mday) + timedelta(1)).strftime("%Y-%m-%d")
+    TODAY = (date(t.tm_year, t.tm_mon, t.tm_mday) + timedelta(1)).strftime("%Y-%m-%d")
 
     # Calculate most recent weekday
     asset_prices = dict(((a.stock_id, a.security, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=TODAY).all())
@@ -135,15 +135,15 @@ def trade(user, form):
 
     if is_buy:
         # Subtract from cash
-        value = form.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().ask
-        user.cash -= Decimal("1.004") * value
+        value = Decimal("1.004") * form.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().ask
+        user.cash -= value
 
         # Add items to basket
         portfolio_asset.qty += form.trade_qty.data
     else:
         # Add to cash
-        value = form.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().bid
-        user.cash += Decimal("0.996" if portfolio_asset.qty > 0 else "0.99") * value
+        value = Decimal("0.996" if portfolio_asset.qty > 0 else "0.99") * form.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().bid
+        user.cash += value
 
         # Remove items from basket
         portfolio_asset.qty -= form.trade_qty.data
@@ -158,7 +158,7 @@ def trade(user, form):
     # Save to database
     db.session.commit()
 
-    FLASHES.append(("Trade successful.", "success"))
+    FLASHES.append(("success", "Trade successful."))
 
 def login(form):
     global FLASHES
