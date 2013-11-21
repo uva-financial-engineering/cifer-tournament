@@ -18,6 +18,7 @@ TODAY = "2013-08-16"
 LAST_WEEKDAY = "2013-08-16"
 RATE = Decimal("1.00002739763558")
 TARGET = Decimal("50000000")
+FLASHES = [] # (category, message) tuples
 
 class Security:
     STOCK, CALL, PUT = range(3)
@@ -28,78 +29,34 @@ class Security:
 def index():
     """Main page that serves as both login screen and app screen."""
 
+    global FLASHES
+
     # Identifies which form (if any) was submitted
     action = request.form["action"] if request.method == "POST" else None
 
     if "user" in session:
         user = User.query.filter_by(id=session["user"]).first()
 
-        # Generate form
-        tradeform = TradeForm(request.form)
-
         # Handle POST requests
         if action == "logout":
             session.pop("user", None)
-        elif action == "trade" and tradeform.validate():
-            security = tradeform.trade_asset.data.split(",")[0]
-            strike = tradeform.trade_asset.data.split(",")[1]
-            stock_id = tradeform.trade_asset.data.split(",")[2]
-            is_buy = tradeform.trade_position.data == "buy"
-
-            # Get basket item (or create it if nonexistent)
-            portfolio_asset = PortfolioAsset.query.filter_by(user_id=session["user"], stock_id=stock_id, security=security, strike=strike).first()
-            if portfolio_asset is None:
-                portfolio_asset = PortfolioAsset(session["user"], stock_id, security, strike, 0, True)
-                db.session.add(portfolio_asset)
-
-            if is_buy:
-                # Subtract from cash
-                value = tradeform.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().ask
-                user.cash -= Decimal("1.004") * value
-
-                # Add items to basket
-                portfolio_asset.qty += tradeform.trade_qty.data
-            else:
-                # Add to cash
-                value = tradeform.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().bid
-                user.cash += Decimal("0.996" if portfolio_asset.qty > 0 else "0.99") * value
-
-                # Remove items from basket
-                portfolio_asset.qty -= tradeform.trade_qty.data
-
-            # Remove basket item if quantity is zero
-            if portfolio_asset.qty == 0:
-                db.session.delete(portfolio_asset)
-
-            # Add transaction record
-            db.session.add(Transaction(date=LAST_WEEKDAY, user_id=session["user"], is_buy=is_buy, stock_id=stock_id, security=security, strike=strike, qty=tradeform.trade_qty.data, value=value))
-
-            # Save to database
-            db.session.commit()
-
-            flash("Trade successful.", "success")
+        elif action == "trade":
+            trade(user, TradeForm(request.form))
         else:
             # Generate transaction history table
             transactions = Transaction.query.filter_by(user_id=session["user"]).order_by(Transaction.date).all()
 
-            flash_errors(tradeform)
-            return render_template("index.html", user=user, date=TODAY, tradeform=tradeform, transactions=transactions, js=generate_js(session["user"]))
+            flash_all()
+            return render_template("index.html", user=user, date=TODAY, tradeform=TradeForm(request.form), transactions=transactions, js=generate_js(session["user"]))
     else:
-        # Generate forms
-        regform = RegForm(request.form)
-        loginform = LoginForm(request.form)
-
         # Handle POST requests
-        if action == "register" and regform.validate():
-            db.session.add(User(email=regform.reg_email.data, password=regform.reg_password.data))
-            db.session.commit()
-            session["user"] = User.query.filter_by(email=regform.reg_email.data).first().id
-        elif action == "login" and loginform.validate():
-            session["user"] = User.query.filter_by(email=loginform.login_email.data).first().id
+        if action == "register":
+            register(RegForm(request.form))
+        elif action == "login":
+            login(LoginForm(request.form))
         else:
-            flash_errors(regform)
-            flash_errors(loginform)
-            return render_template("login.html", regform=regform, loginform=loginform, js=generate_js(-1))
+            flash_all()
+            return render_template("login.html", regform=RegForm(request.form), loginform=LoginForm(request.form), js=generate_js(-1))
 
     return redirect(url_for("index"))
 
@@ -131,7 +88,7 @@ def midnight():
         # Store tracking errors
         TARGET *= RATE
         for user, value in portfolio_values.iteritems():
-            terror = TARGET - value if value < TARGET else (value - TARGET) / 2
+            terror = TARGET - value if value < TARGET else (value - TARGET) * Decimal("0.5")
             db.session.add(Terror(TODAY, user, terror))
 
         db.session.commit()
@@ -139,12 +96,98 @@ def midnight():
 
     return redirect(url_for("index"))
 
+@app.route("/ping")
+def ping():
+    return "0"
+
 @app.route("/favicon.ico")
 def favicon():
     return send_from_directory(os.path.join(app.root_path, "static"),
        "favicon.ico", mimetype="image/vnd.microsoft.icon")
 
 # Helpers
+
+def trade(user, form):
+    global FLASHES
+
+    if not form.validate():
+        flash_errors(form)
+        return
+
+    # Check that asset exists and has nonzero value                 asset_prices
+    # Check whether margin exceeds $22 million:                     users, portfolio_assets, asset_prices
+    # Check that user has 30%+ of margin in cash                    users, portfolio_assets, asset_prices
+    # Check that required amount of cash is present in portfolio    users, portfolio_assets, asset_prices
+    # Check that sell/shortsell doesn't cross over 0                users, portfolio_assets, asset_prices
+    # Check that user didn't already trade asset today              users, transactions
+    # Check that asset isn't in initial portfolio                   users, portfolio_assets
+
+    security = form.trade_asset.data.split(",")[0]
+    strike = form.trade_asset.data.split(",")[1]
+    stock_id = form.trade_asset.data.split(",")[2]
+    is_buy = form.trade_position.data == "buy"
+
+    # Get basket item (or create it if nonexistent)
+    portfolio_asset = PortfolioAsset.query.filter_by(user_id=session["user"], stock_id=stock_id, security=security, strike=strike).first()
+    if portfolio_asset is None:
+        portfolio_asset = PortfolioAsset(session["user"], stock_id, security, strike, 0, True)
+        db.session.add(portfolio_asset)
+
+    if is_buy:
+        # Subtract from cash
+        value = form.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().ask
+        user.cash -= Decimal("1.004") * value
+
+        # Add items to basket
+        portfolio_asset.qty += form.trade_qty.data
+    else:
+        # Add to cash
+        value = form.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().bid
+        user.cash += Decimal("0.996" if portfolio_asset.qty > 0 else "0.99") * value
+
+        # Remove items from basket
+        portfolio_asset.qty -= form.trade_qty.data
+
+    # Remove basket item if quantity is zero
+    if portfolio_asset.qty == 0:
+        db.session.delete(portfolio_asset)
+
+    # Add transaction record
+    db.session.add(Transaction(date=LAST_WEEKDAY, user_id=session["user"], is_buy=is_buy, stock_id=stock_id, security=security, strike=strike, qty=form.trade_qty.data, value=value))
+
+    # Save to database
+    db.session.commit()
+
+    FLASHES.append(("Trade successful.", "success"))
+
+def login(form):
+    global FLASHES
+
+    if not form.validate():
+        flash_errors(form)
+        return
+
+    user = User.query.filter_by(email = form.login_email.data.lower()).first()
+    if not (user and user.check_password(form.login_password.data)):
+        FLASHES.append(("error", "Invalid email or password."))
+        return
+
+    session["user"] = User.query.filter_by(email=form.login_email.data).first().id
+
+def register(form):
+    global FLASHES
+
+    if not regform.validate():
+        flash_errors(form)
+        return
+
+    if User.query.filter_by(email=form.reg_email.data.lower()).first():
+        FLASHES.append(("error", "That email is already taken"))
+        return
+
+    db.session.add(User(email=form.reg_email.data, password=form.reg_password.data))
+    db.session.commit()
+    session["user"] = User.query.filter_by(email=form.reg_email.data).first().id
 
 def generate_js(user):
     js = ""
@@ -201,6 +244,15 @@ def generate_js(user):
     return (js + "AUTHENTICATED=" + str(authenticated).lower() + ";STOCKS=" + str(stocks) + ";INFO=" + str(info) + ";").replace(" ", "")
 
 def flash_errors(form):
+    global FLASHES
+
     for field, errors in form.errors.items():
         for error in errors:
-            flash(error, "error")
+            FLASHES.append(("error", error))
+
+def flash_all():
+    global FLASHES
+
+    for category, message in FLASHES:
+        flash(message, category)
+    FLASHES = []

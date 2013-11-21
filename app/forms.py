@@ -2,7 +2,7 @@ from flask.ext.wtf import Form
 from wtforms import TextField, TextAreaField, SelectField, SubmitField, DecimalField, RadioField, validators, ValidationError, PasswordField, HiddenField
 
 from app import db, app
-from models import User, Stock, AssetPrice
+from models import User, AssetPrice
 
 class RegForm(Form):
     reg_email = TextField("Email", [
@@ -21,16 +21,6 @@ class RegForm(Form):
     def __init__(self, *args, **kwargs):
         Form.__init__(self, *args, **kwargs)
 
-    def validate(self):
-        if not Form.validate(self):
-            return False
-
-        if User.query.filter_by(email=self.reg_email.data.lower()).first():
-            self.reg_email.errors.append("That email is already taken")
-            return False
-        else:
-            return True
-
 class LoginForm(Form):
     login_email = TextField("Email", [
         validators.InputRequired("Email address missing."),
@@ -42,17 +32,6 @@ class LoginForm(Form):
     def __init__(self, *args, **kwargs):
         Form.__init__(self, *args, **kwargs)
 
-    def validate(self):
-        if not Form.validate(self):
-            return False
-
-        user = User.query.filter_by(email = self.login_email.data.lower()).first()
-        if user and user.check_password(self.login_password.data):
-            return True
-        else:
-            self.login_email.errors.append("Invalid email or password.")
-            return False
-
 class TradeForm(Form):
     assets = AssetPrice.query.filter_by(date="2013-08-16").all()
     trade_asset = HiddenField("Asset", [validators.InputRequired("No asset chosen.")])
@@ -61,9 +40,3 @@ class TradeForm(Form):
 
     def __init__(self, *args, **kwargs):
         Form.__init__(self, *args, **kwargs)
-
-    def validate(self):
-        if not Form.validate(self):
-            return False
-
-        return True
