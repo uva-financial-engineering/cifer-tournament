@@ -67,7 +67,9 @@ var App = Backbone.Model.extend({
       $(".trade-table input, .trade-table button").prop("disabled", false);
       $("#trade_qty").val("").focus();
       $("#trade_asset_name").html(selectedEntry.get("symbol") + " " + selectedEntry.get("security_name"));
-      $("#trade_asset").val(selectedEntry.get("security") + "," + selectedEntry.get("strike") + "," + selectedEntry.get("stock_id"));
+      $("#trade_security").val(selectedEntry.get("security"));
+      $("#trade_strike").val(selectedEntry.get("strike"));
+      $("#trade_stock_id").val(selectedEntry.get("stock_id"));
       $("label[for=trade_position-1]").html((selectedEntry.get("shares") > 0) ? "Sell" : "Short sell");
     });
   }

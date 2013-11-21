@@ -122,9 +122,9 @@ def trade(user, form):
     # Check that user didn't already trade asset today              users, transactions
     # Check that asset isn't in initial portfolio                   users, portfolio_assets
 
-    security = form.trade_asset.data.split(",")[0]
-    strike = form.trade_asset.data.split(",")[1]
-    stock_id = form.trade_asset.data.split(",")[2]
+    security = form.trade_security.data
+    strike = form.trade_strike.data
+    stock_id = form.trade_stock_id.data
     is_buy = form.trade_position.data == "buy"
 
     # Get basket item (or create it if nonexistent)
@@ -198,7 +198,7 @@ def generate_js(user):
         portfolio_assets = dict(((a.stock_id, a.security, a.strike), (a.qty, a.liquid)) for a in PortfolioAsset.query.filter_by(user_id=session["user"]).all())
 
         # Generate tracking error table
-        terrors = [[], [], []]
+        terrors = [[]] * 3
         day = 0
         for t in Terror.query.filter_by(user_id=session["user"]).order_by(Terror.date).all():
             terrors[0].append(day)

@@ -13,6 +13,9 @@
   <div style="display:none">
     <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
     {{ tradeform.trade_asset }}
+    {{ tradeform.trade_security }}
+    {{ tradeform.trade_strike }}
+    {{ tradeform.trade_stock_id }}
   </div>
   <table class="trade-table">
     <tbody>
