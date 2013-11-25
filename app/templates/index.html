@@ -7,6 +7,7 @@
   <button type=submit name=action value=logout>Sign Out</button></form>
 <p>Date: {{ " " }}{{ date }}</p>
 <p>Cash: ${{ "%.2f" | format(user.cash) }}</p>
+<p>Portfolio Value: ${{ "%.2f" | format(user.portfolio) }}</p>
 
 <h2>Trade</h2>
 <form id="tradeform" method=post>

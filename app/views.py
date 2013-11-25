@@ -6,7 +6,8 @@ import time
 from datetime import date, timedelta
 from decimal import Decimal
 
-from flask import render_template, flash, redirect, request, session, send_from_directory, url_for
+from flask import (render_template, flash, redirect, request, session,
+    send_from_directory, url_for)
 
 from app import app, db
 from models import User, Stock, AssetPrice, PortfolioAsset, Terror, Transaction
@@ -17,7 +18,7 @@ from forms import RegForm, LoginForm, TradeForm
 TODAY = "2013-08-16"
 LAST_WEEKDAY = "2013-08-16"
 RATE = Decimal("1.00002739763558")
-TARGET = Decimal("50000000")
+TARGET = Decimal("47736625")
 FLASHES = [] # (category, message) tuples
 
 class Security:
@@ -28,8 +29,6 @@ class Security:
 @app.route("/", methods=["GET", "POST"])
 def index():
     """Main page that serves as both login screen and app screen."""
-
-    global FLASHES
 
     # Identifies which form (if any) was submitted
     action = request.form["action"] if request.method == "POST" else None
@@ -47,7 +46,13 @@ def index():
             transactions = Transaction.query.filter_by(user_id=session["user"]).order_by(Transaction.date).all()
 
             flash_all()
-            return render_template("index.html", user=user, date=TODAY, tradeform=TradeForm(request.form), transactions=transactions, js=generate_js(session["user"]))
+            return render_template("index.html",
+                user=user,
+                date=TODAY,
+                target=TARGET,
+                tradeform=TradeForm(request.form),
+                transactions=transactions,
+                js=generate_js(session["user"]))
     else:
         # Handle POST requests
         if action == "register":
@@ -56,15 +61,26 @@ def index():
             login(LoginForm(request.form))
         else:
             flash_all()
-            return render_template("login.html", regform=RegForm(request.form), loginform=LoginForm(request.form), js=generate_js(-1))
+            return render_template("login.html",
+                regform=RegForm(request.form),
+                loginform=LoginForm(request.form),
+                js=generate_js(-1))
 
     return redirect(url_for("index"))
 
 @app.route("/midnight")
 def midnight():
-    """Advances current date by 1 day (should be called at midnight)."""
+    """Advances current date by 1 day (should be called at midnight UTC)."""
 
-    global TODAY, LAST_WEEKDAY, RATE, TARGET
+    global TODAY, LAST_WEEKDAY, TARGET
+
+    # Add interest to cash, then record it
+    portfolio_values = dict()
+    users = dict()
+    for user in User.query.all():
+        users[user.id] = user
+        user.cash *= RATE
+        portfolio_values[user.id] = user.cash
 
     # Calculate new date
     t = time.strptime(TODAY, "%Y-%m-%d")
@@ -72,28 +88,24 @@ def midnight():
 
     # Calculate most recent weekday
     asset_prices = dict(((a.stock_id, a.security, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=TODAY).all())
+
     if len(asset_prices):
         LAST_WEEKDAY = TODAY
+    else:
+        asset_prices = dict(((a.stock_id, a.security, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=LAST_WEEKDAY).all())
 
-        # Add interest to cash, then record it
-        portfolio_values = dict()
-        for user in User.query.all():
-            user.cash *= RATE
-            portfolio_values[user.id] = user.cash
+    # Add value of basket items
+    for portfolio_asset in PortfolioAsset.query.all():
+        portfolio_values[portfolio_asset.user_id] += portfolio_asset.qty * asset_prices[(portfolio_asset.stock_id, portfolio_asset.security, portfolio_asset.strike)]
 
-        # Add value of basket items
-        for portfolio_asset in PortfolioAsset.query.all():
-            portfolio_values[portfolio_asset.user_id] += portfolio_asset.qty * asset_prices[(portfolio_asset.stock_id, portfolio_asset.security, portfolio_asset.strike)]
+    # Store tracking errors
+    TARGET *= RATE
+    for user, value in portfolio_values.iteritems():
+        users[user].portfolio = value
+        terror = TARGET - value if value < TARGET else (value - TARGET) * Decimal("0.5")
+        db.session.add(Terror(TODAY, user, terror))
 
-        # Store tracking errors
-        TARGET *= RATE
-        for user, value in portfolio_values.iteritems():
-            terror = TARGET - value if value < TARGET else (value - TARGET) * Decimal("0.5")
-            db.session.add(Terror(TODAY, user, terror))
-
-        db.session.commit()
-        return redirect(url_for("index"))
-
+    db.session.commit()
     return redirect(url_for("index"))
 
 @app.route("/ping")
@@ -114,7 +126,7 @@ def trade(user, form):
         flash_errors(form)
         return
 
-    # Check that asset exists and has nonzero value                 asset_prices
+    # Check that asset is tradable today and has nonzero value      asset_prices
     # Check whether margin exceeds $22 million:                     users, portfolio_assets, asset_prices
     # Check that user has 30%+ of margin in cash                    users, portfolio_assets, asset_prices
     # Check that required amount of cash is present in portfolio    users, portfolio_assets, asset_prices
@@ -198,7 +210,7 @@ def generate_js(user):
         portfolio_assets = dict(((a.stock_id, a.security, a.strike), (a.qty, a.liquid)) for a in PortfolioAsset.query.filter_by(user_id=session["user"]).all())
 
         # Generate tracking error table
-        terrors = [[]] * 3
+        terrors = [[], [], []]
         day = 0
         for t in Terror.query.filter_by(user_id=session["user"]).order_by(Terror.date).all():
             terrors[0].append(day)

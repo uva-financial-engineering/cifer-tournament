@@ -12,6 +12,7 @@ class User(db.Model):
     last_name = db.Column(db.Text)
     institution = db.Column(db.Text)
     cash = db.Column(db.Numeric)
+    portfolio = db.Column(db.Numeric)
 
     def __init__(self, email, password, first_name, last_name, institution):
         self.email = email.lower()
@@ -20,6 +21,7 @@ class User(db.Model):
         self.last_name = last_name
         self.institution = institution
         self.cash = 18000000
+        self.portfolio = 47736625
 
     def set_password(self, plaintext):
         self.password = generate_password_hash(plaintext)

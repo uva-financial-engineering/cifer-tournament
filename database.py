@@ -12,9 +12,10 @@ CREATE TABLE users (
   last_name text NOT NULL,
   institution text NOT NULL,
   cash numeric NOT NULL,
+  portfolio numeric NOT NULL,
   CONSTRAINT users_pkey PRIMARY KEY (id)
 ) WITH (OIDS=FALSE);
-INSERT INTO users (email, password, first_name, last_name, institution, cash) VALUES ('a@a.com', 'pbkdf2:sha1:1000$pVkEoJO4$82724b822cbcfb54c50122147c9f1e6b4dfed53c', 'John', 'Doe', 'University of Virginia', 18000000);"""
+INSERT INTO users (email, password, first_name, last_name, institution, cash, portfolio) VALUES ('a@a.com', 'pbkdf2:sha1:1000$pVkEoJO4$82724b822cbcfb54c50122147c9f1e6b4dfed53c', 'John', 'Doe', 'University of Virginia', 18000000, 47736625);"""
 
 stocks_sql = """DROP TABLE IF EXISTS stocks;
 CREATE TABLE stocks (
