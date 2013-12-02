@@ -53,7 +53,7 @@ ol {
 
 #wrap {
   margin: 0 auto;
-  width: 960px;
+  width: 900px;
 }
 
 .left-sidebar {
@@ -81,47 +81,47 @@ ol {
 
 .main {
   float: left;
-  margin-top: 15px;
-  width: 500px;
+  padding-top: 20px;
+  width: 440px;
 }
 
 .content {
   background: #eee;
   border-radius: 8px;
+  margin-bottom: 10px;
   padding: 15px;
-}
 
-.info-table {
-  width: 100%;
+  table {
+    width: 100%;
 
-  th, td {
-    padding: 2px 8px;
-    text-align: right;
+    th, td {
+      padding: 2px 8px;
+      text-align: right;
+    }
 
-    &:first-child, &:nth-child(2) {
+    &.portfolio-table th:first-child, &.portfolio-table td:first-child,
+    &.stock-table th:first-child, &.stock-table td:first-child,
+    &.stock-table th:nth-child(2), &.stock-table td:nth-child(2),
+    &.option-table th:first-child, &.option-table td:first-child {
       text-align: left;
     }
-  }
 
-  tr.illiquid {
-    color: #999;
-  }
-
-  tr.liquid:hover {
-    background: #ddd;
-    cursor: pointer;
-
-    td:first-child {
-      border-radius: 6px 0 0 6px;
+    tr.illiquid {
+      color: #999;
     }
 
-    td:last-child {
-      border-radius: 0 6px 6px 0;
-    }
-  }
+    tr.liquid:hover {
+      background: #ddd;
+      cursor: pointer;
 
-  tr.merged th {
-    text-align: center;
+      td:first-child {
+        border-radius: 6px 0 0 6px;
+      }
+
+      td:last-child {
+        border-radius: 0 6px 6px 0;
+      }
+    }
   }
 }
 

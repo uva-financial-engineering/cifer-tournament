@@ -24,10 +24,47 @@
     {% endwith %}
   </div>
   <div class="main">
+    {% if user %}
+    <h2>{{ user.first_name + " " + user.last_name }}'s Portfolio</h2>
     <div class="content">
-      <table class="info-table">
+      <table class="portfolio-table">
         <tbody>
-          {% block info %}{% endblock %}
+          <tr>
+            <th class="left-align">Symbol</th>
+            <th>Asset</th>
+            <th>Shares</th>
+            <th>Value</th>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <h2>Stock Market</h2>
+    <div class="content">
+      <table class="stock-table">
+        <tbody>
+          <tr>
+            <th class="left-align">Symbol</th>
+            <th class="left-align">Sector</th>
+            <th>Bid Price</th>
+            <th>Ask Price</th>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Options Market</h2>
+    <div class="content">
+      <table class="option-table">
+        <tbody>
+          <tr>
+            <th class="left-align">Symbol</th>
+            <th>Type</th>
+            <th>Strike Price</th>
+            <th>Bid Price</th>
+            <th>Ask Price</th>
+          </tr>
         </tbody>
       </table>
     </div>

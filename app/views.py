@@ -15,10 +15,10 @@ from forms import RegForm, LoginForm, TradeForm
 
 # Constants
 
-TODAY = "2013-08-16"
-LAST_WEEKDAY = "2013-08-16"
+TODAY = "2014-01-14"
+LAST_WEEKDAY = "2014-01-14"
 RATE = Decimal("1.00002739763558")
-TARGET = Decimal("47736625")
+TARGET = Decimal("56041830")
 FLASHES = [] # (category, message) tuples
 
 class Security:
@@ -207,7 +207,7 @@ def generate_js(user):
     if user > 0:
         authenticated = True;
         # Get portfolio assets
-        portfolio_assets = dict(((a.stock_id, a.security, a.strike), (a.qty, a.liquid)) for a in PortfolioAsset.query.filter_by(user_id=session["user"]).all())
+        portfolio_assets = dict(((a.stock_id, a.security, a.strike), (a.qty, 1 if a.liquid else 0)) for a in PortfolioAsset.query.filter_by(user_id=session["user"]).all())
 
         # Generate tracking error table
         terrors = [[], [], []]
@@ -222,38 +222,28 @@ def generate_js(user):
         authenticated = False;
 
     # Build stock table
-    stocks = [[str(s.symbol), str(s.sector)] for s in Stock.query.order_by(Stock.id).all()]
+    stocks = [[str(s.symbol), None, str(s.sector), None, None] for s in Stock.query.order_by(Stock.id).all()]
 
-    info = []
+    portfolio = []
+    options = []
+
     for a in AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all():
-        a.symbol, a.sector = stocks[a.stock_id - 1]
+
+        liquid = 1
+
+        if authenticated and ((a.stock_id, a.security, a.strike) in portfolio_assets):
+            qty, liquid = portfolio_assets[(a.stock_id, a.security, a.strike)]
+
+            portfolio.append([a.stock_id, liquid, a.security, str(a.strike), int(qty), "%.2f" % float(qty * (a.bid + Decimal("0.005")))])
 
         if a.security == Security.STOCK:
-            a.name = "Stock"
-        elif a.security == Security.CALL:
-            a.name = str(a.strike) + " Call"
+            stocks[a.stock_id - 1][1] = liquid
+            stocks[a.stock_id - 1][3] = "%.2f" % float(a.bid)
+            stocks[a.stock_id - 1][4] = "%.2f" % float(a.ask)
         else:
-            a.name = str(a.strike) + " Put"
+            options.append([a.stock_id, liquid, a.security, float(a.strike), "%.2f" % float(a.bid), "%.2f" % float(a.ask)])
 
-        info_array = [a.stock_id, int(a.security), float(a.strike), "%.2f" % float(a.bid), "%.2f" % float(a.ask)]
-
-        if authenticated:
-            # Add portfolio info
-            if (a.stock_id, a.security, a.strike) in portfolio_assets:
-                a.qty, a.liquid = portfolio_assets[(a.stock_id, a.security, a.strike)]
-                a.value = a.qty * (a.bid + Decimal("0.005"))
-            else:
-                a.liquid = 1
-                a.qty = 0
-                a.value = 0
-
-            info_array.append(1 if a.liquid else 0)
-            info_array.append(int(a.qty))
-            info_array.append("%.2f" % float(a.value))
-
-        info.append(info_array)
-
-    return (js + "AUTHENTICATED=" + str(authenticated).lower() + ";STOCKS=" + str(stocks) + ";INFO=" + str(info) + ";").replace(" ", "")
+    return (js + "AUTHENTICATED=" + str(authenticated).lower() + (";PORTFOLIO=" + str(portfolio) if authenticated else "") + ";STOCKS=" + str(stocks) + ";OPTIONS=" + str(options) + ";").replace(", ", ",")
 
 def flash_errors(form):
     global FLASHES
