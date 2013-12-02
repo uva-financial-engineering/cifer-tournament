@@ -68,7 +68,7 @@ ol {
 }
 
 .login-table, .registration-table {
-  input, button {
+  input:not([type=radio]), button {
     width: 150px;
   }
 }

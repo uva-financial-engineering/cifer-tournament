@@ -13,6 +13,11 @@
   <div class="left-sidebar">
     <h1>CIFEr</h1>
     {% block left %}{% endblock %}
+
+    {% if user %}
+    <p><em>Grayed out assets are illiquid and cannot be traded during the contest.</em></p>
+    {% endif %}
+
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <ul class="flashes">
@@ -30,7 +35,7 @@
       <table class="portfolio-table">
         <tbody>
           <tr>
-            <th class="left-align">Symbol</th>
+            <th>Symbol</th>
             <th>Asset</th>
             <th>Shares</th>
             <th>Value</th>
@@ -45,8 +50,8 @@
       <table class="stock-table">
         <tbody>
           <tr>
-            <th class="left-align">Symbol</th>
-            <th class="left-align">Sector</th>
+            <th>Symbol</th>
+            <th>Sector</th>
             <th>Bid Price</th>
             <th>Ask Price</th>
           </tr>
@@ -59,7 +64,7 @@
       <table class="option-table">
         <tbody>
           <tr>
-            <th class="left-align">Symbol</th>
+            <th>Symbol</th>
             <th>Type</th>
             <th>Strike Price</th>
             <th>Bid Price</th>
