@@ -16,7 +16,9 @@ from forms import RegForm, LoginForm, TradeForm
 # Constants
 
 TODAY = "2014-01-14"
-LAST_WEEKDAY = "2014-01-14"
+LAST_WEEKDAY = TODAY
+DAY_AFTER_CONTEST = "2014-02-22"
+
 RATE = Decimal("1.00002739763558")
 TARGET = Decimal("56041830")
 FLASHES = [] # (category, message) tuples
@@ -116,8 +118,8 @@ def midnight():
         portfolio_values[user.id] = user.cash
 
     # Calculate new date
-    t = time.strptime(TODAY, "%Y-%m-%d")
-    TODAY = (date(t.tm_year, t.tm_mon, t.tm_mday) + timedelta(1)).strftime("%Y-%m-%d")
+    yesterday = TODAY
+    TODAY = day_after(TODAY)
 
     # Calculate most recent weekday
     asset_prices = dict(((a.stock_id, a.security, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=TODAY).all())
@@ -129,14 +131,15 @@ def midnight():
 
     # Add value of basket items
     for portfolio_asset in PortfolioAsset.query.all():
-        portfolio_values[portfolio_asset.user_id] += portfolio_asset.qty * asset_prices[(portfolio_asset.stock_id, portfolio_asset.security, portfolio_asset.strike)]
+        price_key = (portfolio_asset.stock_id, portfolio_asset.security, portfolio_asset.strike)
+        portfolio_values[portfolio_asset.user_id] += portfolio_asset.qty * (asset_prices[price_key] if price_key in asset_prices else 0)
 
     # Store tracking errors
     TARGET *= RATE
     for user, value in portfolio_values.iteritems():
         users[user].portfolio = value
         terror = TARGET - value if value < TARGET else (value - TARGET) * Decimal("0.5")
-        db.session.add(Terror(TODAY, user, terror))
+        db.session.add(Terror(yesterday, user, terror))
 
     db.session.commit()
     return redirect(url_for("index"))
@@ -257,6 +260,16 @@ def generate_js(user):
             terrors[1].append(t.date.strftime("%d-%b"))
             terrors[2].append(int(t.terror))
             day += 1
+
+        # Set tracking errors of future days to 0
+        t = TODAY
+        while t != DAY_AFTER_CONTEST:
+            terrors[0].append(day)
+            terrors[1].append(time.strftime("%d-%b", time.strptime(t, "%Y-%m-%d")))
+            terrors[2].append(0)
+            day += 1
+            t = day_after(t)
+
         js = "TERRORS=" + str(terrors) + ";"
     else:
         authenticated = False;
@@ -284,6 +297,10 @@ def generate_js(user):
             options.append([a.stock_id, liquid, a.security, float(a.strike), "%.2f" % float(a.bid), "%.2f" % float(a.ask)])
 
     return (js + "AUTHENTICATED=" + str(authenticated).lower() + (";PORTFOLIO=" + str(portfolio) if authenticated else "") + ";STOCKS=" + str(stocks) + ";OPTIONS=" + str(options) + ";").replace(", ", ",")
+
+def day_after(datetext):
+    t = time.strptime(datetext, "%Y-%m-%d")
+    return (date(t.tm_year, t.tm_mon, t.tm_mday) + timedelta(1)).strftime("%Y-%m-%d")
 
 def flash_errors(form):
     global FLASHES

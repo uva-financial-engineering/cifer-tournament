@@ -219,7 +219,7 @@ var AppView = Backbone.View.extend({
     if (AUTHENTICATED) {
       // Render transaction error graph
       var r = new Raphael("holder", 220, 120);
-      r.linechart(0, 0, 200, 120, TERRORS[0], TERRORS[2], { nostroke: false, axis: "0 0 0 0", symbol: "circle", smooth: true }).hoverColumn(function() {
+      r.linechart(0, 0, 200, 120, TERRORS[0], TERRORS[2], {nostroke: false, axis: "0 0 0 0", symbol: "circle", smooth: true, shade: true}).hoverColumn(function() {
         $("#terror-info").html(TERRORS[1][this.axis] + ": " + this.values[0]);
       }, function() {
         $("#terror-info").html("&nbsp;");
