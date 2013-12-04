@@ -14,7 +14,7 @@ var EntryView = Backbone.View.extend({
   },
   events: {
     click: function() {
-      if (this.model.get("liquid") === 1) {
+      if (this.model.get("liquid") === 1 && AUTHENTICATED) {
         this.model.get("app").set({selectedEntry: this.model});
       }
     }
@@ -23,7 +23,9 @@ var EntryView = Backbone.View.extend({
 
 var PortfolioEntryView = EntryView.extend({
   render: function() {
-    this.$el.addClass((this.model.get("liquid") === 1) ? "liquid" : "illiquid");
+    if (AUTHENTICATED) {
+      this.$el.addClass((this.model.get("liquid") === 1) ? "liquid" : "illiquid");
+    }
     this.$el.html("<td>" +
       this.model.get("symbol") +
       "</td><td>" +
@@ -39,7 +41,9 @@ var PortfolioEntryView = EntryView.extend({
 
 var StockEntryView = EntryView.extend({
   render: function() {
-    this.$el.addClass((this.model.get("liquid") === 1) ? "liquid" : "illiquid");
+    if (AUTHENTICATED) {
+      this.$el.addClass((this.model.get("liquid") === 1) ? "liquid" : "illiquid");
+    }
     this.$el.html("<td>" +
       this.model.get("symbol") +
       "</td><td>" +
@@ -55,7 +59,9 @@ var StockEntryView = EntryView.extend({
 
 var OptionEntryView = EntryView.extend({
   render: function() {
-    this.$el.addClass((this.model.get("liquid") === 1) ? "liquid" : "illiquid");
+    if (AUTHENTICATED) {
+      this.$el.addClass((this.model.get("liquid") === 1) ? "liquid" : "illiquid");
+    }
     this.$el.html("<td>" +
       this.model.get("symbol") +
       "</td><td>" +
@@ -97,8 +103,10 @@ var AppView = Backbone.View.extend({
   initialize: function() {
     _.bindAll(this, "render");
 
-    $(".trade-table input, .trade-table button").prop("disabled", true);
-    $(".left-sidebar").scrollToFixed();
+    if (AUTHENTICATED) {
+      $(".trade-table input, .trade-table button").prop("disabled", true);
+      $(".left-sidebar").scrollToFixed();
+    }
 
     var i, security_name;
 
@@ -138,7 +146,9 @@ var AppView = Backbone.View.extend({
         symbol: STOCKS[i][0],
         liquid: STOCKS[i][1],
         sector: STOCKS[i][2],
+        security: 0,
         security_name: "Stock",
+        strike: -1,
         bid: STOCKS[i][3],
         ask: STOCKS[i][4],
         app: this.model

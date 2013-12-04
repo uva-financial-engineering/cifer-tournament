@@ -30,6 +30,39 @@ class Security:
 def index():
     """Main page that serves as both login screen and app screen."""
 
+    # Create debug user if no users exist
+    if not User.query.all():
+        db.session.add(User("a@a.com", "a", "John", "Doe", "University of Virginia", True))
+
+        db.session.add(PortfolioAsset(1, 5, 0, -1, 250000, False))
+        db.session.add(PortfolioAsset(1, 5, 1, 14, 300000, False))
+        db.session.add(PortfolioAsset(1, 8, 1, 49, -100000, False))
+        db.session.add(PortfolioAsset(1, 8, 2, 55, 600000, False))
+        db.session.add(PortfolioAsset(1, 8, 2, 56, 1000000, False))
+        db.session.add(PortfolioAsset(1, 16, 1, 176, 1000000, False))
+        db.session.add(PortfolioAsset(1, 16, 1, 177, 300000, False))
+        db.session.add(PortfolioAsset(1, 2, 0, -1, -3000, False))
+        db.session.add(PortfolioAsset(1, 7, 1, 46, 200000, False))
+        db.session.add(PortfolioAsset(1, 7, 2, 50, -100000, False))
+        db.session.add(PortfolioAsset(1, 7, 2, 51, -50000, False))
+        db.session.add(PortfolioAsset(1, 29, 2, 96, 400000, False))
+        db.session.add(PortfolioAsset(1, 29, 2, 97, 500000, False))
+        db.session.add(PortfolioAsset(1, 29, 2, 98, 1000000, False))
+        db.session.add(PortfolioAsset(1, 13, 0, -1, 100000, False))
+        db.session.add(PortfolioAsset(1, 13, 1, 23, 400000, False))
+        db.session.add(PortfolioAsset(1, 13, 1, 24, 500000, False))
+        db.session.add(PortfolioAsset(1, 26, 1, 40, 500000, False))
+        db.session.add(PortfolioAsset(1, 26, 2, 43, 600000, False))
+        db.session.add(PortfolioAsset(1, 14, 1, 33, 600000, False))
+        db.session.add(PortfolioAsset(1, 14, 1, 34, 800000, False))
+        db.session.add(PortfolioAsset(1, 14, 1, 35, 1000000, False))
+        db.session.add(PortfolioAsset(1, 1, 0, -1, 400000, False))
+        db.session.add(PortfolioAsset(1, 1, 1, 8.5, -300000, False))
+        db.session.add(PortfolioAsset(1, 15, 0, -1, 3000, False))
+        db.session.add(PortfolioAsset(1, 17, 0, -1, 52000, False))
+
+        db.session.commit()
+
     # Identifies which form (if any) was submitted
     action = request.form["action"] if request.method == "POST" else None
 
@@ -189,7 +222,7 @@ def login(form):
 def register(form):
     global FLASHES
 
-    if not regform.validate():
+    if not form.validate():
         flash_errors(form)
         return
 
@@ -197,7 +230,14 @@ def register(form):
         FLASHES.append(("error", "That email is already taken"))
         return
 
-    db.session.add(User(email=form.reg_email.data, password=form.reg_password.data))
+    if form.reg_algorithm.data == "yes":
+        algorithm = True
+    elif form.reg_algorithm.data == "no":
+        algorithm = False
+    else:
+        algorithm = None
+
+    db.session.add(User(email=form.reg_email.data, password=form.reg_password.data, first_name=form.reg_first.data, last_name=form.reg_last.data, institution=form.reg_institution.data, algorithm=algorithm))
     db.session.commit()
     session["user"] = User.query.filter_by(email=form.reg_email.data).first().id
 

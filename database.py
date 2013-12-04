@@ -13,9 +13,9 @@ CREATE TABLE users (
   institution text NOT NULL,
   cash numeric NOT NULL,
   portfolio numeric NOT NULL,
+  algorithm boolean,
   CONSTRAINT users_pkey PRIMARY KEY (id)
-) WITH (OIDS=FALSE);
-INSERT INTO users (email, password, first_name, last_name, institution, cash, portfolio) VALUES ('a@a.com', 'pbkdf2:sha1:1000$pVkEoJO4$82724b822cbcfb54c50122147c9f1e6b4dfed53c', 'John', 'Doe', 'University of Virginia', 18000000, 56041830);"""
+) WITH (OIDS=FALSE);"""
 
 stocks_sql = """DROP TABLE IF EXISTS stocks;
 CREATE TABLE stocks (
@@ -74,52 +74,12 @@ CREATE TABLE portfolio_assets (
     qty numeric NOT NULL,
     liquid boolean NOT NULL,
     CONSTRAINT portfolio_assets_pkey PRIMARY KEY (id)
-) WITH (OIDS=FALSE);
-INSERT INTO portfolio_assets (user_id, stock_id, security, strike, qty, liquid) VALUES
-    (1, 5, 0, -1, 250000, FALSE),
-    (1, 5, 1, 14, 300000, FALSE),
-    (1, 8, 1, 49, -100000, FALSE),
-    (1, 8, 2, 55, 600000, FALSE),
-    (1, 8, 2, 56, 1000000, FALSE),
-    (1, 16, 1, 176, 1000000, FALSE),
-    (1, 16, 1, 177, 300000, FALSE),
-    (1, 2, 0, -1, -3000, FALSE),
-    (1, 7, 1, 46, 200000, FALSE),
-    (1, 7, 2, 50, -100000, FALSE),
-    (1, 7, 2, 51, -50000, FALSE),
-    (1, 29, 2, 96, 400000, FALSE),
-    (1, 29, 2, 97, 500000, FALSE),
-    (1, 29, 2, 98, 1000000, FALSE),
-    (1, 13, 0, -1, 100000, FALSE),
-    (1, 13, 1, 23, 400000, FALSE),
-    (1, 13, 1, 24, 500000, FALSE),
-    (1, 26, 1, 40, 500000, FALSE),
-    (1, 26, 2, 43, 600000, FALSE),
-    (1, 14, 1, 33, 600000, FALSE),
-    (1, 14, 1, 34, 800000, FALSE),
-    (1, 14, 1, 35, 1000000, FALSE),
-    (1, 1, 0, -1, 400000, FALSE),
-    (1, 1, 1, 8.5, -300000, FALSE),
-    (1, 15, 0, -1, 3000, FALSE),
-    (1, 17, 0, -1, 52000, FALSE);
-"""
+) WITH (OIDS=FALSE);"""
 
 if __name__ == "__main__":
 
     if len(sys.argv) < 3:
         print("-- Usage: python database.py [options CSV file] [stock prices CSV file]")
-        exit(0)
-    elif len(sys.argv) > 3:
-        with open("database.sql", "w") as f:
-            f.write(users_sql +
-                transactions_sql +
-                terrors_sql +
-                portfolio_assets_sql)
-
-        # Execute file
-
-        os.system("sudo service postgresql restart")
-        os.system("PGPASSWORD=postgres psql -U postgres -d cifer -f database.sql")
         exit(0)
 
     with open(sys.argv[1]) as f:
@@ -182,5 +142,4 @@ if __name__ == "__main__":
 
     # Execute file
 
-    os.system("sudo service postgresql restart")
     os.system("PGPASSWORD=postgres psql -U postgres -d cifer -f database.sql")

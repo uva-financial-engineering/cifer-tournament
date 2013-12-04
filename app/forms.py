@@ -14,8 +14,7 @@ class RegForm(Form):
         validators.InputRequired("Institution required.")])
     reg_password = PasswordField("Password", [
         validators.InputRequired("Password required.")])
-    reg_automated = RadioField("Automation", [
-        validators.InputRequired("Please answer the question.")],
+    reg_algorithm = RadioField("Algorithm",
         choices=[("yes", "Yes"), ("no", "No"), ("maybe", "Maybe")])
 
 class LoginForm(Form):

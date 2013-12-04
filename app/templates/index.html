@@ -1,7 +1,6 @@
 {% extends "layout.html" %}
 
 {% block left %}
-<p>{{ user.email }}</p>
 <form method=post>
   <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
   <button type=submit name=action value=logout>Sign Out</button></form>

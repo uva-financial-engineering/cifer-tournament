@@ -13,15 +13,17 @@ class User(db.Model):
     institution = db.Column(db.Text)
     cash = db.Column(db.Numeric)
     portfolio = db.Column(db.Numeric)
+    algorithm = db.Column(db.Boolean)
 
-    def __init__(self, email, password, first_name, last_name, institution):
+    def __init__(self, email, password, first_name, last_name, institution, algorithm):
         self.email = email.lower()
         self.set_password(password)
         self.first_name = first_name
         self.last_name = last_name
         self.institution = institution
         self.cash = 18000000
-        self.portfolio = 47736625
+        self.portfolio = 56041830
+        self.algorithm = algorithm
 
     def set_password(self, plaintext):
         self.password = generate_password_hash(plaintext)
