@@ -1,4 +1,4 @@
-/* global $, _, Backbone, Raphael, AUTHENTICATED, PORTFOLIO, STOCKS, OPTIONS, TERRORS */
+/* global $, _, Backbone, Raphael, AUTHENTICATED, PORTFOLIO, STOCKS, OPTIONS, CUMTERROR, TERRORS */
 (function() {
 "use strict";
 
@@ -219,10 +219,12 @@ var AppView = Backbone.View.extend({
     if (AUTHENTICATED) {
       // Render transaction error graph
       var r = new Raphael("holder", 220, 120);
+      var default_msg = "Cumulative error: " + CUMTERROR;
+      $("#terror-info").html(default_msg);
       r.linechart(0, 0, 200, 120, TERRORS[0], TERRORS[2], {nostroke: false, axis: "0 0 0 0", symbol: "circle", smooth: true, shade: true}).hoverColumn(function() {
-        $("#terror-info").html(TERRORS[1][this.axis] + ": " + this.values[0]);
+        $("#terror-info").html("Error on " + TERRORS[1][this.axis] + ": " + this.values[0]);
       }, function() {
-        $("#terror-info").html("&nbsp;");
+        $("#terror-info").html(default_msg);
       }).symbols.attr({ r: 3 });
     }
   }

@@ -15,16 +15,20 @@ from forms import RegForm, LoginForm, TradeForm
 
 # Constants
 
-TODAY = "2014-01-14"
-LAST_WEEKDAY = TODAY
-DAY_AFTER_CONTEST = "2014-02-22"
+class Security:
+    STOCK, CALL, PUT = range(3)
+
+class Status:
+    BEFORE, DURING, AFTER = True, False, False
 
 RATE = Decimal("1.00002739763558")
 TARGET = Decimal("56041830")
 FLASHES = [] # (category, message) tuples
 
-class Security:
-    STOCK, CALL, PUT = range(3)
+TODAY = "2014-01-12"
+CONTEST_FIRST_DAY = "2014-01-14"
+LAST_WEEKDAY = CONTEST_FIRST_DAY
+DAY_AFTER_CONTEST = "2014-02-22"
 
 # Routes
 
@@ -35,34 +39,7 @@ def index():
     # Create debug user if no users exist
     if not User.query.all():
         db.session.add(User("a@a.com", "a", "John", "Doe", "University of Virginia", True))
-
-        db.session.add(PortfolioAsset(1, 5, 0, -1, 250000, False))
-        db.session.add(PortfolioAsset(1, 5, 1, 14, 300000, False))
-        db.session.add(PortfolioAsset(1, 8, 1, 49, -100000, False))
-        db.session.add(PortfolioAsset(1, 8, 2, 55, 600000, False))
-        db.session.add(PortfolioAsset(1, 8, 2, 56, 1000000, False))
-        db.session.add(PortfolioAsset(1, 16, 1, 176, 1000000, False))
-        db.session.add(PortfolioAsset(1, 16, 1, 177, 300000, False))
-        db.session.add(PortfolioAsset(1, 2, 0, -1, -3000, False))
-        db.session.add(PortfolioAsset(1, 7, 1, 46, 200000, False))
-        db.session.add(PortfolioAsset(1, 7, 2, 50, -100000, False))
-        db.session.add(PortfolioAsset(1, 7, 2, 51, -50000, False))
-        db.session.add(PortfolioAsset(1, 29, 2, 96, 400000, False))
-        db.session.add(PortfolioAsset(1, 29, 2, 97, 500000, False))
-        db.session.add(PortfolioAsset(1, 29, 2, 98, 1000000, False))
-        db.session.add(PortfolioAsset(1, 13, 0, -1, 100000, False))
-        db.session.add(PortfolioAsset(1, 13, 1, 23, 400000, False))
-        db.session.add(PortfolioAsset(1, 13, 1, 24, 500000, False))
-        db.session.add(PortfolioAsset(1, 26, 1, 40, 500000, False))
-        db.session.add(PortfolioAsset(1, 26, 2, 43, 600000, False))
-        db.session.add(PortfolioAsset(1, 14, 1, 33, 600000, False))
-        db.session.add(PortfolioAsset(1, 14, 1, 34, 800000, False))
-        db.session.add(PortfolioAsset(1, 14, 1, 35, 1000000, False))
-        db.session.add(PortfolioAsset(1, 1, 0, -1, 400000, False))
-        db.session.add(PortfolioAsset(1, 1, 1, 8.5, -300000, False))
-        db.session.add(PortfolioAsset(1, 15, 0, -1, 3000, False))
-        db.session.add(PortfolioAsset(1, 17, 0, -1, 52000, False))
-
+        create_portfolio(1)
         db.session.commit()
 
     # Identifies which form (if any) was submitted
@@ -109,40 +86,51 @@ def midnight():
 
     global TODAY, LAST_WEEKDAY, TARGET
 
-    # Add interest to cash, then record it
-    portfolio_values = dict()
-    users = dict()
-    for user in User.query.all():
-        users[user.id] = user
-        user.cash *= RATE
-        portfolio_values[user.id] = user.cash
-
     # Calculate new date
     yesterday = TODAY
     TODAY = day_after(TODAY)
 
-    # Calculate most recent weekday
-    asset_prices = dict(((a.stock_id, a.security, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=TODAY).all())
+    if Status.BEFORE:
+        if TODAY == CONTEST_FIRST_DAY:
+            Status.BEFORE, Status.DURING = False, True
 
-    if len(asset_prices):
-        LAST_WEEKDAY = TODAY
+    elif Status.DURING:
+        if TODAY == DAY_AFTER_CONTEST:
+            Status.DURING, Status.AFTER = False, True
+
+        # Add interest to cash, then record it
+        portfolio_values = dict()
+        users = dict()
+        for user in User.query.all():
+            users[user.id] = user
+            user.cash *= RATE
+            portfolio_values[user.id] = user.cash
+
+        # Calculate most recent weekday
+        asset_prices = dict(((a.stock_id, a.security, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=TODAY).all())
+
+        if len(asset_prices):
+            LAST_WEEKDAY = TODAY
+        else:
+            asset_prices = dict(((a.stock_id, a.security, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=LAST_WEEKDAY).all())
+
+        # Add value of basket items
+        for portfolio_asset in PortfolioAsset.query.all():
+            price_key = (portfolio_asset.stock_id, portfolio_asset.security, portfolio_asset.strike)
+            portfolio_values[portfolio_asset.user_id] += portfolio_asset.qty * (asset_prices[price_key] if price_key in asset_prices else 0)
+
+        # Store tracking errors
+        TARGET *= RATE
+        for user, value in portfolio_values.iteritems():
+            users[user].portfolio = value
+            terror = TARGET - value if value < TARGET else (value - TARGET) * Decimal("0.5")
+            db.session.add(Terror(yesterday, user, terror))
+
+        db.session.commit()
     else:
-        asset_prices = dict(((a.stock_id, a.security, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=LAST_WEEKDAY).all())
+        pass
 
-    # Add value of basket items
-    for portfolio_asset in PortfolioAsset.query.all():
-        price_key = (portfolio_asset.stock_id, portfolio_asset.security, portfolio_asset.strike)
-        portfolio_values[portfolio_asset.user_id] += portfolio_asset.qty * (asset_prices[price_key] if price_key in asset_prices else 0)
-
-    # Store tracking errors
-    TARGET *= RATE
-    for user, value in portfolio_values.iteritems():
-        users[user].portfolio = value
-        terror = TARGET - value if value < TARGET else (value - TARGET) * Decimal("0.5")
-        db.session.add(Terror(yesterday, user, terror))
-
-    db.session.commit()
-    return redirect(url_for("index"))
+    return "0"
 
 @app.route("/ping")
 def ping():
@@ -157,6 +145,14 @@ def favicon():
 
 def trade(user, form):
     global FLASHES
+
+    if Status.BEFORE:
+        FLASHES.append(("error", "Contest begins on " + CONTEST_FIRST_DAY + "."))
+        return
+
+    if Status.AFTER:
+        FLASHES.append(("error", "Contest is over."))
+        return
 
     if not form.validate():
         flash_errors(form)
@@ -240,39 +236,48 @@ def register(form):
     else:
         algorithm = None
 
+    # Add user
     db.session.add(User(email=form.reg_email.data, password=form.reg_password.data, first_name=form.reg_first.data, last_name=form.reg_last.data, institution=form.reg_institution.data, algorithm=algorithm))
     db.session.commit()
     session["user"] = User.query.filter_by(email=form.reg_email.data).first().id
 
+    # Create user's portfolio
+    create_portfolio(session["user"])
+    db.session.commit()
+
 def generate_js(user):
     js = ""
 
-    if user > 0:
-        authenticated = True;
+    authenticated = user > 0
+
+    if authenticated:
         # Get portfolio assets
         portfolio_assets = dict(((a.stock_id, a.security, a.strike), (a.qty, 1 if a.liquid else 0)) for a in PortfolioAsset.query.filter_by(user_id=session["user"]).all())
 
         # Generate tracking error table
         terrors = [[], [], []]
-        day = 0
+
+        terror_dict = dict()
         for t in Terror.query.filter_by(user_id=session["user"]).order_by(Terror.date).all():
-            terrors[0].append(day)
-            terrors[1].append(t.date.strftime("%d-%b"))
-            terrors[2].append(int(t.terror))
-            day += 1
+            terror_dict[t.date.strftime("%Y-%m-%d")] = int(t.terror)
 
-        # Set tracking errors of future days to 0
-        t = TODAY
-        while t != DAY_AFTER_CONTEST:
-            terrors[0].append(day)
-            terrors[1].append(time.strftime("%d-%b", time.strptime(t, "%Y-%m-%d")))
-            terrors[2].append(0)
-            day += 1
-            t = day_after(t)
+        day = CONTEST_FIRST_DAY
+        i = 0
+        cum_error = 0
+        while day != DAY_AFTER_CONTEST:
+            terrors[0].append(i)
+            terrors[1].append(day)
 
-        js = "TERRORS=" + str(terrors) + ";"
-    else:
-        authenticated = False;
+            if day in terror_dict:
+                terrors[2].append(terror_dict[day])
+                cum_error += terror_dict[day]
+            else:
+                terrors[2].append(0)
+
+            day = day_after(day)
+            i += 1
+
+        js = "CUMTERROR=" + str(cum_error) + ";TERRORS=" + str(terrors) + ";"
 
     # Build stock table
     stocks = [[str(s.symbol), None, str(s.sector), None, None] for s in Stock.query.order_by(Stock.id).all()]
@@ -301,6 +306,35 @@ def generate_js(user):
 def day_after(datetext):
     t = time.strptime(datetext, "%Y-%m-%d")
     return (date(t.tm_year, t.tm_mon, t.tm_mday) + timedelta(1)).strftime("%Y-%m-%d")
+
+def create_portfolio(user_id):
+    db.session.add_all([
+        PortfolioAsset(user_id, 5, 0, -1, 250000, False),
+        PortfolioAsset(user_id, 5, 1, 14, 300000, False),
+        PortfolioAsset(user_id, 8, 1, 49, -100000, False),
+        PortfolioAsset(user_id, 8, 2, 55, 600000, False),
+        PortfolioAsset(user_id, 8, 2, 56, 1000000, False),
+        PortfolioAsset(user_id, 16, 1, 176, 1000000, False),
+        PortfolioAsset(user_id, 16, 1, 177, 300000, False),
+        PortfolioAsset(user_id, 2, 0, -1, -3000, False),
+        PortfolioAsset(user_id, 7, 1, 46, 200000, False),
+        PortfolioAsset(user_id, 7, 2, 50, -100000, False),
+        PortfolioAsset(user_id, 7, 2, 51, -50000, False),
+        PortfolioAsset(user_id, 29, 2, 96, 400000, False),
+        PortfolioAsset(user_id, 29, 2, 97, 500000, False),
+        PortfolioAsset(user_id, 29, 2, 98, 1000000, False),
+        PortfolioAsset(user_id, 13, 0, -1, 100000, False),
+        PortfolioAsset(user_id, 13, 1, 23, 400000, False),
+        PortfolioAsset(user_id, 13, 1, 24, 500000, False),
+        PortfolioAsset(user_id, 26, 1, 40, 500000, False),
+        PortfolioAsset(user_id, 26, 2, 43, 600000, False),
+        PortfolioAsset(user_id, 14, 1, 33, 600000, False),
+        PortfolioAsset(user_id, 14, 1, 34, 800000, False),
+        PortfolioAsset(user_id, 14, 1, 35, 1000000, False),
+        PortfolioAsset(user_id, 1, 0, -1, 400000, False),
+        PortfolioAsset(user_id, 1, 1, 8.5, -300000, False),
+        PortfolioAsset(user_id, 15, 0, -1, 3000, False),
+        PortfolioAsset(user_id, 17, 0, -1, 52000, False)])
 
 def flash_errors(form):
     global FLASHES
