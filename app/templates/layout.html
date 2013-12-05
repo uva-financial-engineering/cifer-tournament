@@ -2,22 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="description" content="CIFEr 2014 Hedge Fund Tournament">
+  <meta name="description" content="CIFEr 2014 Hedge Fund Competition">
   <meta name="author" content="University of Virginia">
-  <title>CIFEr 2014 Hedge Fund Tournament</title>
+  <title>CIFEr 2014 Hedge Fund Competition</title>
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body id="top">
 <div id="wrap">
   <div class="left-sidebar">
-    <h1>CIFEr</h1>
+    <h1>CIFEr 2014 Hedge Fund Competition</h1>
     {% block left %}{% endblock %}
-
-    {% if user %}
-    <p><em>Grayed out assets are illiquid and cannot be traded during the contest.</em></p>
-    {% endif %}
-
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <ul class="flashes">

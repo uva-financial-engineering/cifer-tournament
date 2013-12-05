@@ -28,7 +28,7 @@ FLASHES = [] # (category, message) tuples
 TODAY = "2014-01-12"
 CONTEST_FIRST_DAY = "2014-01-14"
 LAST_WEEKDAY = CONTEST_FIRST_DAY
-DAY_AFTER_CONTEST = "2014-02-22"
+DAY_AFTER_CONTEST = "2014-02-19"
 
 # Routes
 
@@ -54,16 +54,12 @@ def index():
         elif action == "trade":
             trade(user, TradeForm(request.form))
         else:
-            # Generate transaction history table
-            transactions = Transaction.query.filter_by(user_id=session["user"]).order_by(Transaction.date).all()
-
             flash_all()
             return render_template("index.html",
                 user=user,
-                date=TODAY,
+                date=pretty_print(TODAY),
                 target=TARGET,
                 tradeform=TradeForm(request.form),
-                transactions=transactions,
                 js=generate_js(session["user"]))
     else:
         # Handle POST requests
@@ -147,7 +143,7 @@ def trade(user, form):
     global FLASHES
 
     if Status.BEFORE:
-        FLASHES.append(("error", "Contest begins on " + CONTEST_FIRST_DAY + "."))
+        FLASHES.append(("error", "Contest begins on " + pretty_print(CONTEST_FIRST_DAY) + "."))
         return
 
     if Status.AFTER:
@@ -252,13 +248,13 @@ def generate_js(user):
 
     if authenticated:
         # Get portfolio assets
-        portfolio_assets = dict(((a.stock_id, a.security, a.strike), (a.qty, 1 if a.liquid else 0)) for a in PortfolioAsset.query.filter_by(user_id=session["user"]).all())
+        portfolio_assets = dict(((a.stock_id, a.security, a.strike), (a.qty, 1 if a.liquid else 0)) for a in PortfolioAsset.query.filter_by(user_id=user).all())
 
         # Generate tracking error table
         terrors = [[], [], []]
 
         terror_dict = dict()
-        for t in Terror.query.filter_by(user_id=session["user"]).order_by(Terror.date).all():
+        for t in Terror.query.filter_by(user_id=user).order_by(Terror.date).all():
             terror_dict[t.date.strftime("%Y-%m-%d")] = int(t.terror)
 
         day = CONTEST_FIRST_DAY
@@ -266,7 +262,7 @@ def generate_js(user):
         cum_error = 0
         while day != DAY_AFTER_CONTEST:
             terrors[0].append(i)
-            terrors[1].append(day)
+            terrors[1].append(pretty_print(day))
 
             if day in terror_dict:
                 terrors[2].append(terror_dict[day])
@@ -277,7 +273,10 @@ def generate_js(user):
             day = day_after(day)
             i += 1
 
-        js = "CUMTERROR=" + str(cum_error) + ";TERRORS=" + str(terrors) + ";"
+        # Get transaction history for today
+        transactions = [[1 if t.is_buy else 0, t.stock_id, t.security, str(t.strike), int(t.qty), "%.2f" % float(t.value)] for t in Transaction.query.filter_by(user_id=user, date=TODAY).all()]
+
+        js = "CUMTERROR=" + str(cum_error) + ";TERRORS=" + str(terrors) + ";TRANSACTIONS=" + str(transactions) + ";"
 
     # Build stock table
     stocks = [[str(s.symbol), None, str(s.sector), None, None] for s in Stock.query.order_by(Stock.id).all()]
@@ -335,6 +334,9 @@ def create_portfolio(user_id):
         PortfolioAsset(user_id, 1, 1, 8.5, -300000, False),
         PortfolioAsset(user_id, 15, 0, -1, 3000, False),
         PortfolioAsset(user_id, 17, 0, -1, 52000, False)])
+
+def pretty_print(datetext):
+    return time.strftime("%d %B", time.strptime(datetext, "%Y-%m-%d"))
 
 def flash_errors(form):
     global FLASHES

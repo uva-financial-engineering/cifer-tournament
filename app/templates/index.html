@@ -1,12 +1,8 @@
 {% extends "layout.html" %}
 
 {% block left %}
-<form method=post>
-  <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
-  <button type=submit name=action value=logout>Sign Out</button></form>
-<p>Date: {{ " " }}{{ date }}</p>
-<p>Cash: ${{ "%.2f" | format(user.cash) }}</p>
-<p>Portfolio Value: ${{ "%.2f" | format(user.portfolio) }}</p>
+<p>Portfolio Value:<br>${{ "%.2f" | format(user.portfolio) }}</p>
+<p>Cash:<br>${{ "%.2f" | format(user.cash) }}</p>
 
 <h2>Trade</h2>
 <form id="tradeform" method=post>
@@ -38,26 +34,22 @@
     </tbody>
   </table>
 </form>
+<p><em>Grayed out assets are illiquid and cannot be traded during the contest.</em></p>
 {% endblock %}
 
 {% block right %}
+<form method=post>
+  <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
+  <p class="right-align"><button type=submit name=action value=logout>Log Out</button></p>
+</form>
+
+<h2>Today's Transaction History</h2>
+<p>So far on{{ " " }}{{ date }}, you have:</p>
+<ol class="yes_history" id="history"></ol>
+<p class="no_history">You haven't traded yet today.</p>
+<p>Note that you are not allowed to trade the same asset multiple times in the same day.</p>
+
 <h2>Tracking Errors</h2>
 <div id="holder"></div>
 <p id="terror-info">&nbsp;</p>
-
-<h2>Transactions</h2>
-{% if transactions %}
-<table>
-  <tbody>
-  {% for t in transactions %}
-    <tr>
-      <td>{{ t.date }}:</td>
-      <td>{{ t.qty }} shares for {{ t.value }}</td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<p>No data.</p>
-{% endif %}
 {% endblock %}
