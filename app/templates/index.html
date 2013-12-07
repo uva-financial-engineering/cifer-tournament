@@ -52,6 +52,9 @@
 <p>Note that you are not allowed to trade the same asset multiple times in the same day.</p>
 
 <h2>Tracking Errors</h2>
+{% if target %}
+<p>Target portfolio value for beginning of day tomorrow is ${{ "%.2f" | format(target) }}.</p>
+{% endif %}
 <p>Values are updated at midnight UTC.</p>
 <div id="holder"></div>
 <p id="terror-info">&nbsp;</p>

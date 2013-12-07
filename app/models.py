@@ -22,7 +22,6 @@ class User(db.Model):
         self.last_name = last_name
         self.institution = institution
         self.cash = 18000000
-        self.portfolio = 56041830
         self.algorithm = algorithm
 
     def set_password(self, plaintext):

@@ -42,10 +42,11 @@ var PortfolioEntryView = EntryView.extend({
     if (AUTHENTICATED) {
       this.$el.addClass((this.model.get("liquid") === 1) ? "liquid" : "illiquid");
     }
+    var security_name = this.model.get("security_name");
     this.$el.html("<td>" +
       this.model.get("symbol") +
       "</td><td>" +
-      this.model.get("security_name") +
+      security_name.substring(security_name.indexOf(" ") + 1) +
       "</td><td>" +
       this.model.get("shares") +
       "</td><td>" +

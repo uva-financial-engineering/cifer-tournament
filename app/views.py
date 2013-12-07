@@ -22,7 +22,7 @@ class Status:
     BEFORE, DURING, AFTER = False, True, False
 
 RATE = Decimal("1.00002739763558")
-TARGET = Decimal("56041830")
+INITIAL_VALUE = Decimal("53724780")
 FLASHES = [] # (category, message) tuples
 
 TODAY = "2014-01-13"
@@ -38,9 +38,11 @@ def index():
 
     # Create debug user if no users exist
     if not User.query.all():
-        db.session.add(User("a@a.com", "a", "John", "Doe", "University of Virginia", True))
-        create_portfolio(1)
+        new_user = User("a@a.com", "a", "John", "Doe", "University of Virginia", True)
+        db.session.add(new_user)
+        create_portfolio(new_user, 1)
         db.session.commit()
+        session["user"] = 1
 
     # Identifies which form (if any) was submitted
     action = request.form["action"] if request.method == "POST" else None
@@ -55,10 +57,11 @@ def index():
             trade(user, TradeForm(request.form))
         else:
             flash_all()
+            app.logger.debug(session["user"])
             return render_template("index.html",
                 user=user,
                 date=pretty_print(TODAY),
-                target=TARGET,
+                target=get_target() * RATE if Status.DURING else None,
                 tradeform=TradeForm(request.form),
                 js=generate_js(session["user"]))
     else:
@@ -80,7 +83,7 @@ def index():
 def midnight():
     """Advances current date by 1 day (should be called at midnight UTC)."""
 
-    global TODAY, LAST_WEEKDAY, TARGET
+    global TODAY, LAST_WEEKDAY
 
     # Calculate new date
     yesterday = TODAY
@@ -116,10 +119,10 @@ def midnight():
             portfolio_values[portfolio_asset.user_id] += portfolio_asset.qty * (asset_prices[price_key] if price_key in asset_prices else 0)
 
         # Store tracking errors
-        TARGET *= RATE
+        target = get_target()
         for user, value in portfolio_values.iteritems():
             users[user].portfolio = value
-            terror = TARGET - value if value < TARGET else (value - TARGET) * Decimal("0.5")
+            terror = target - value if value < target else (value - target) * Decimal("0.5")
             db.session.add(Terror(yesterday, user, terror))
 
         db.session.commit()
@@ -287,12 +290,13 @@ def register(form):
         algorithm = None
 
     # Add user
-    db.session.add(User(email=form.reg_email.data, password=form.reg_password.data, first_name=form.reg_first.data, last_name=form.reg_last.data, institution=form.reg_institution.data, algorithm=algorithm))
+    new_user = User(email=form.reg_email.data, password=form.reg_password.data, first_name=form.reg_first.data, last_name=form.reg_last.data, institution=form.reg_institution.data, algorithm=algorithm)
+    db.session.add(new_user)
     db.session.commit()
     session["user"] = User.query.filter_by(email=form.reg_email.data).first().id
 
     # Create user's portfolio
-    create_portfolio(session["user"])
+    create_portfolio(new_user, session["user"])
     db.session.commit()
     FLASHES.append(("success", "Registration successful! Feel free to test out functionality during the registration period before the real contest begins on 14 January."))
 
@@ -306,7 +310,9 @@ def generate_js(user):
         # Build portfolio table
         portfolio = []
         asset_prices_dict = dict(((a.stock_id, a.security, a.strike), a) for a in asset_prices)
-        for v in PortfolioAsset.query.filter_by(user_id=user).order_by(PortfolioAsset.security, PortfolioAsset.stock_id, PortfolioAsset.strike).all():
+        portfolio_assets = PortfolioAsset.query.filter_by(user_id=user).order_by(PortfolioAsset.security, PortfolioAsset.stock_id, PortfolioAsset.strike).all()
+        portfolio_assets_dict = dict(((a.stock_id, a.security, a.strike), a) for a in portfolio_assets)
+        for v in portfolio_assets:
             price = (asset_prices_dict[(v.stock_id, v.security, v.strike)].bid + Decimal("0.005")) if ((v.stock_id, v.security, v.strike) in asset_prices_dict) else 0
             portfolio.append([v.stock_id, 1 if v.liquid else 0, v.security, str(v.strike), int(v.qty), "%.2f" % float(v.qty * price)])
 
@@ -344,6 +350,9 @@ def generate_js(user):
     for v in asset_prices:
         liquid = 1
 
+        if authenticated and (v.stock_id, v.security, v.strike) in portfolio_assets_dict and (not portfolio_assets_dict[(v.stock_id, v.security, v.strike)].liquid):
+            liquid = 0
+
         if v.security == Security.STOCK:
             stocks[v.stock_id - 1][1] = liquid
             stocks[v.stock_id - 1][3] = "%.2f" % float(v.bid)
@@ -357,37 +366,54 @@ def day_after(datetext):
     t = time.strptime(datetext, "%Y-%m-%d")
     return (date(t.tm_year, t.tm_mon, t.tm_mday) + timedelta(1)).strftime("%Y-%m-%d")
 
-def create_portfolio(user_id):
-    db.session.add_all([
-        PortfolioAsset(user_id, 5, 0, -1, 250000, False),
-        PortfolioAsset(user_id, 5, 1, 14, 300000, False),
-        PortfolioAsset(user_id, 8, 1, 49, -100000, False),
-        PortfolioAsset(user_id, 8, 2, 55, 600000, False),
-        PortfolioAsset(user_id, 8, 2, 56, 1000000, False),
-        PortfolioAsset(user_id, 16, 1, 176, 1000000, False),
-        PortfolioAsset(user_id, 16, 1, 177, 300000, False),
-        PortfolioAsset(user_id, 2, 0, -1, -3000, False),
-        PortfolioAsset(user_id, 7, 1, 46, 200000, False),
-        PortfolioAsset(user_id, 7, 2, 50, -100000, False),
-        PortfolioAsset(user_id, 7, 2, 51, -50000, False),
-        PortfolioAsset(user_id, 29, 2, 96, 400000, False),
-        PortfolioAsset(user_id, 29, 2, 97, 500000, False),
-        PortfolioAsset(user_id, 29, 2, 98, 1000000, False),
-        PortfolioAsset(user_id, 13, 0, -1, 100000, False),
-        PortfolioAsset(user_id, 13, 1, 23, 400000, False),
-        PortfolioAsset(user_id, 13, 1, 24, 500000, False),
-        PortfolioAsset(user_id, 26, 1, 40, 500000, False),
-        PortfolioAsset(user_id, 26, 2, 43, 600000, False),
-        PortfolioAsset(user_id, 14, 1, 33, 600000, False),
-        PortfolioAsset(user_id, 14, 1, 34, 800000, False),
-        PortfolioAsset(user_id, 14, 1, 35, 1000000, False),
-        PortfolioAsset(user_id, 1, 0, -1, 400000, False),
-        PortfolioAsset(user_id, 1, 1, 8.5, -300000, False),
-        PortfolioAsset(user_id, 15, 0, -1, 3000, False),
-        PortfolioAsset(user_id, 17, 0, -1, 52000, False)])
+def create_portfolio(user, user_id):
+    portfolio_assets = [
+        (5, 0, -1, 250000),
+        (5, 1, 14, 300000),
+        (8, 1, 49, -100000),
+        (8, 2, 55, 600000),
+        (8, 2, 56, 1000000),
+        (16, 1, 176, 1000000),
+        (16, 1, 177, 300000),
+        (2, 0, -1, -3000),
+        (7, 1, 46, 200000),
+        (7, 2, 50, -100000),
+        (7, 2, 51, -50000),
+        (29, 2, 96, 400000),
+        (29, 2, 97, 500000),
+        (29, 2, 98, 1000000),
+        (13, 0, -1, 100000),
+        (13, 1, 23, 400000),
+        (13, 1, 24, 500000),
+        (26, 1, 40, 500000),
+        (26, 2, 43, 600000),
+        (14, 1, 33, 600000),
+        (14, 1, 34, 800000),
+        (14, 1, 35, 1000000),
+        (1, 0, -1, 400000),
+        (1, 1, 8.5, -300000),
+        (15, 0, -1, 3000),
+        (17, 0, -1, 52000)]
+    db.session.add_all([PortfolioAsset(user_id, a[0], a[1], a[2], a[3], False) for a in portfolio_assets])
+
+    asset_bids = dict(((a.stock_id, a.security, a.strike), a.bid) for a in AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all())
+    portfolio_value = 18000000
+    for a in portfolio_assets:
+        if (a[0], a[1], a[2]) in asset_bids:
+            portfolio_value += a[3] * (asset_bids[(a[0], a[1], a[2])] + Decimal("0.005"))
+    user.portfolio = portfolio_value
 
 def pretty_print(datetext):
     return time.strftime("%d %B", time.strptime(datetext, "%Y-%m-%d"))
+
+def get_target():
+    if Status.DURING:
+        day = CONTEST_FIRST_DAY
+        power = 0
+        while day != TODAY:
+            power += 1
+            day = day_after(day)
+        return INITIAL_VALUE * (RATE ** power)
 
 def flash_errors(form):
     global FLASHES
