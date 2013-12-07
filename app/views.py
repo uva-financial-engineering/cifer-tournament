@@ -175,18 +175,26 @@ def trade(user, form):
 
     if is_buy:
         # Subtract from cash
-        value = Decimal("1.004") * form.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().ask
+        ask = AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().ask
+        value = Decimal("1.004") * form.trade_qty.data * ask
         user.cash -= value
 
         # Add items to basket
         portfolio_asset.qty += form.trade_qty.data
+
+        # Update portfolio value
+        user.portfolio += form.trade_qty.data * (ask - Decimal("0.005")) - value
     else:
         # Add to cash
-        value = Decimal("0.996" if portfolio_asset.qty > 0 else "0.99") * form.trade_qty.data * AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().bid
+        bid = AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().bid
+        value = Decimal("0.996" if portfolio_asset.qty > 0 else "0.99") * form.trade_qty.data * bid
         user.cash += value
 
         # Remove items from basket
         portfolio_asset.qty -= form.trade_qty.data
+
+        # Update portfolio value
+        user.portfolio += form.trade_qty.data * (bid + Decimal("0.005")) - value
 
     # Remove basket item if quantity is zero
     if portfolio_asset.qty == 0:
@@ -240,6 +248,7 @@ def register(form):
     # Create user's portfolio
     create_portfolio(session["user"])
     db.session.commit()
+    FLASHES.append(("success", "Registration successful! Feel free to test out functionality during the registration period before the real contest begins on 14 January."))
 
 def generate_js(user):
     js = ""
