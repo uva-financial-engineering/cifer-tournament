@@ -25,8 +25,8 @@ RATE = Decimal("1.00002739763558")
 TARGET = Decimal("56041830")
 FLASHES = [] # (category, message) tuples
 
-TODAY = "2014-01-14"
-CONTEST_FIRST_DAY = "2014-01-14"
+TODAY = "2014-01-13"
+CONTEST_FIRST_DAY = "2014-01-13"
 LAST_WEEKDAY = CONTEST_FIRST_DAY
 DAY_AFTER_CONTEST = "2014-02-19"
 
@@ -300,10 +300,15 @@ def generate_js(user):
     js = ""
 
     authenticated = user > 0
+    asset_prices = AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all()
 
     if authenticated:
-        # Get portfolio assets
-        portfolio_assets = dict(((a.stock_id, a.security, a.strike), (a.qty, 1 if a.liquid else 0)) for a in PortfolioAsset.query.filter_by(user_id=user).all())
+        # Build portfolio table
+        portfolio = []
+        asset_prices_dict = dict(((a.stock_id, a.security, a.strike), a) for a in asset_prices)
+        for v in PortfolioAsset.query.filter_by(user_id=user).order_by(PortfolioAsset.security, PortfolioAsset.stock_id, PortfolioAsset.strike).all():
+            price = (asset_prices_dict[(v.stock_id, v.security, v.strike)].bid + Decimal("0.005")) if ((v.stock_id, v.security, v.strike) in asset_prices_dict) else 0
+            portfolio.append([v.stock_id, 1 if v.liquid else 0, v.security, str(v.strike), int(v.qty), "%.2f" % float(v.qty * price)])
 
         # Generate tracking error table
         terrors = [[], [], []]
@@ -331,31 +336,22 @@ def generate_js(user):
         # Get transaction history for today
         transactions = [[1 if t.is_buy else 0, t.stock_id, t.security, str(t.strike), int(t.qty), "%.2f" % float(t.value)] for t in Transaction.query.filter_by(user_id=user, date=TODAY).all()]
 
-        js = "CUMTERROR=" + str(cum_error) + ";TERRORS=" + str(terrors) + ";TRANSACTIONS=" + str(transactions) + ";"
+        js = "CUMTERROR=" + str(cum_error) + ";TERRORS=" + str(terrors) + ";TRANSACTIONS=" + str(transactions) + ";PORTFOLIO=" + str(portfolio) + ";"
 
-    # Build stock table
+    # Build stock and options tables
     stocks = [[str(s.symbol), None, str(s.sector), None, None] for s in Stock.query.order_by(Stock.id).all()]
-
-    portfolio = []
     options = []
-
-    for a in AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all():
-
+    for v in asset_prices:
         liquid = 1
 
-        if authenticated and ((a.stock_id, a.security, a.strike) in portfolio_assets):
-            qty, liquid = portfolio_assets[(a.stock_id, a.security, a.strike)]
-
-            portfolio.append([a.stock_id, liquid, a.security, str(a.strike), int(qty), "%.2f" % float(qty * (a.bid + Decimal("0.005")))])
-
-        if a.security == Security.STOCK:
-            stocks[a.stock_id - 1][1] = liquid
-            stocks[a.stock_id - 1][3] = "%.2f" % float(a.bid)
-            stocks[a.stock_id - 1][4] = "%.2f" % float(a.ask)
+        if v.security == Security.STOCK:
+            stocks[v.stock_id - 1][1] = liquid
+            stocks[v.stock_id - 1][3] = "%.2f" % float(v.bid)
+            stocks[v.stock_id - 1][4] = "%.2f" % float(v.ask)
         else:
-            options.append([a.stock_id, liquid, a.security, float(a.strike), "%.2f" % float(a.bid), "%.2f" % float(a.ask)])
+            options.append([v.stock_id, liquid, v.security, float(v.strike), "%.2f" % float(v.bid), "%.2f" % float(v.ask)])
 
-    return (js + "AUTHENTICATED=" + str(authenticated).lower() + (";PORTFOLIO=" + str(portfolio) if authenticated else "") + ";STOCKS=" + str(stocks) + ";OPTIONS=" + str(options) + ";").replace(", ", ",")
+    return (js + "AUTHENTICATED=" + str(authenticated).lower() + ";STOCKS=" + str(stocks) + ";OPTIONS=" + str(options) + ";").replace(", ", ",")
 
 def day_after(datetext):
     t = time.strptime(datetext, "%Y-%m-%d")
