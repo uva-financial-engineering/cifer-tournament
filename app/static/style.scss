@@ -79,6 +79,10 @@ ol {
   input:not([type=radio]), button {
     width: 165px;
   }
+
+  td {
+    padding: 3px 0;
+  }
 }
 
 .trade-table {

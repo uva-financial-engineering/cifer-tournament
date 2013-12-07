@@ -17,7 +17,7 @@ class RegForm(Form):
         validators.InputRequired("Institution required.")])
     reg_password = PasswordField("Password", [
         validators.InputRequired("Password required.")])
-    reg_password2 = PasswordField("Password", [
+    reg_password2 = PasswordField("Repeat Password", [
         validators.EqualTo("reg_password", "Passwords don't match."),
         validators.InputRequired("Please repeat your password.")])
     reg_algorithm = RadioField("Algorithm",

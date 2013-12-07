@@ -5,8 +5,8 @@
   <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
   <table class="login-table">
     <tbody>
-      <tr><td>{{ loginform.login_email(placeholder="Email") }}</td></tr>
-      <tr><td>{{ loginform.login_password(placeholder="Password") }}</td></tr>
+      <tr><td>{{ loginform.login_email.label }}:<br>{{ loginform.login_email }}</td></tr>
+      <tr><td>{{ loginform.login_password.label }}:<br>{{ loginform.login_password }}</td></tr>
       <tr><td><button type=submit name=action value=login>Log In</button></td></tr>
     </tbody>
   </table>
@@ -16,13 +16,13 @@
   <input name="csrf_token" type="hidden" value="{{ csrf_token() }}">
   <table class="registration-table">
     <tbody>
-      <tr><td>{{ regform.reg_email(placeholder="Email") }}</td></tr>
-      <tr><td>{{ regform.reg_first(placeholder="First Name") }}</td></tr>
-      <tr><td>{{ regform.reg_last(placeholder="Last Name") }}</td></tr>
-      <tr><td>{{ regform.reg_institution(placeholder="Institution") }}</td></tr>
-      <tr><td>{{ regform.reg_password(placeholder="Password") }}</td></tr>
-      <tr><td>{{ regform.reg_password2(placeholder="Repeat Password") }}</td></tr>
-      <tr><td>Would you participate in a competition that requires you to program an automated portfolio management algorithm?</td></tr>
+      <tr><td>{{ regform.reg_email.label }}:<br>{{ regform.reg_email }}</td></tr>
+      <tr><td>{{ regform.reg_first.label }}:<br>{{ regform.reg_first }}</td></tr>
+      <tr><td>{{ regform.reg_last.label }}:<br>{{ regform.reg_last }}</td></tr>
+      <tr><td>{{ regform.reg_institution.label }}:<br>{{ regform.reg_institution }}</td></tr>
+      <tr><td>{{ regform.reg_password.label }}:<br>{{ regform.reg_password }}</td></tr>
+      <tr><td>{{ regform.reg_password2.label }}:<br>{{ regform.reg_password2 }}</td></tr>
+      <tr><td>Would you participate in a later competition that requires you to program an automated portfolio management algorithm?</td></tr>
       <tr><td>
         {{ regform.reg_algorithm }}
       </td></tr>
