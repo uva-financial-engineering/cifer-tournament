@@ -1,7 +1,8 @@
 {% extends "layout.html" %}
 
 {% block left %}
-<p title="(includes cash)">Portfolio Value:<br>${{ "%.2f" | format(user.portfolio) }}</p>
+<p>Today's Date:<br>{{ date }}</p>
+<p>Portfolio Value (incl. cash):<br>${{ "%.2f" | format(user.portfolio) }}</p>
 <p>Cash:<br>${{ "%.2f" | format(user.cash) }}</p>
 
 <h2>Trade</h2>
@@ -45,13 +46,13 @@
 
 <h2>Today's Transaction History</h2>
 <div class="yes_history">
-  <p>So far on{{ " " }}{{ date }}, you have:</p>
   <ol id="history"></ol>
 </div>
 <p class="no_history">You haven't traded yet today.</p>
 <p>Note that you are not allowed to trade the same asset multiple times in the same day.</p>
 
 <h2>Tracking Errors</h2>
+<p>Values are updated at midnight UTC.</p>
 <div id="holder"></div>
 <p id="terror-info">&nbsp;</p>
 {% endblock %}

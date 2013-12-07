@@ -19,13 +19,13 @@ class Security:
     STOCK, CALL, PUT = range(3)
 
 class Status:
-    BEFORE, DURING, AFTER = True, False, False
+    BEFORE, DURING, AFTER = False, True, False
 
 RATE = Decimal("1.00002739763558")
 TARGET = Decimal("56041830")
 FLASHES = [] # (category, message) tuples
 
-TODAY = "2014-01-12"
+TODAY = "2014-01-14"
 CONTEST_FIRST_DAY = "2014-01-14"
 LAST_WEEKDAY = CONTEST_FIRST_DAY
 DAY_AFTER_CONTEST = "2014-02-19"
@@ -154,54 +154,100 @@ def trade(user, form):
         flash_errors(form)
         return
 
-    # Check that asset is tradable today and has nonzero value      asset_prices
-    # Check whether margin exceeds $22 million:                     users, portfolio_assets, asset_prices
-    # Check that user has 30%+ of margin in cash                    users, portfolio_assets, asset_prices
-    # Check that required amount of cash is present in portfolio    users, portfolio_assets, asset_prices
-    # Check that sell/shortsell doesn't cross over 0                users, portfolio_assets, asset_prices
-    # Check that user didn't already trade asset today              users, transactions
-    # Check that asset isn't in initial portfolio                   users, portfolio_assets
+    # Check that market is open
+    if TODAY != LAST_WEEKDAY:
+        FLASHES.append(("error", "The market is closed today."))
+        return
 
-    security = form.trade_security.data
-    strike = form.trade_strike.data
-    stock_id = form.trade_stock_id.data
-    is_buy = form.trade_position.data == "buy"
+    stock_id = int(form.trade_stock_id.data)
+    security = int(form.trade_security.data)
+    strike = Decimal(form.trade_strike.data)
+    asset_key = (stock_id, security, strike)
+
+    # Check that user didn't already trade asset today
+    if asset_key in [(t.stock_id, t.security, t.strike) for t in Transaction.query.filter_by(user_id=user.id, date=TODAY).all()]:
+        FLASHES.append(("error", "You can't trade the same asset multiple times in the same day."))
+        return
+
+    asset_prices = dict(((a.stock_id, a.security, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=TODAY).all())
+
+    # Check that asset is tradable today and has nonzero value
+    if asset_key not in asset_prices:
+        FLASHES.append(("error", "You cannot trade assets that are currently worthless."))
+        return
 
     # Get basket item (or create it if nonexistent)
-    portfolio_asset = PortfolioAsset.query.filter_by(user_id=session["user"], stock_id=stock_id, security=security, strike=strike).first()
-    if portfolio_asset is None:
+    portfolio_assets = dict(((int(a.stock_id), int(a.security), Decimal(a.strike)), a) for a in PortfolioAsset.query.filter_by(user_id=user.id).all())
+    if asset_key in portfolio_assets:
+        portfolio_asset = portfolio_assets[asset_key]
+
+        # Check that asset is liquid
+        if not portfolio_asset.liquid:
+            FLASHES.append(("error", "Asset is illiquid."))
+            return
+    else:
         portfolio_asset = PortfolioAsset(session["user"], stock_id, security, strike, 0, True)
+        portfolio_assets[asset_key] = portfolio_asset
         db.session.add(portfolio_asset)
+
+    qty = form.trade_qty.data
+    is_buy = form.trade_position.data == "buy"
+
+    # Check that sell/shortsell doesn't cross over 0
+    if (not is_buy) and portfolio_asset.qty > 0 and qty > portfolio_asset.qty:
+        FLASHES.append(("error", "You can't switch from a long position to a short one in the same day."))
+        return
+
 
     if is_buy:
         # Subtract from cash
-        ask = AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().ask
-        value = Decimal("1.004") * form.trade_qty.data * ask
+        ask = AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=TODAY).first().ask
+        value = Decimal("1.004") * qty * ask
         user.cash -= value
 
+        # Check that required amount of cash is present in portfolio
+        if user.cash < 0:
+            FLASHES.append(("error", "You don't have enough cash."))
+            return
+
         # Add items to basket
-        portfolio_asset.qty += form.trade_qty.data
+        portfolio_asset.qty += qty
 
         # Update portfolio value
-        user.portfolio += form.trade_qty.data * (ask - Decimal("0.005")) - value
+        user.portfolio += qty * (ask - Decimal("0.005")) - value
     else:
         # Add to cash
-        bid = AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=LAST_WEEKDAY).first().bid
-        value = Decimal("0.996" if portfolio_asset.qty > 0 else "0.99") * form.trade_qty.data * bid
+        bid = AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=TODAY).first().bid
+        value = Decimal("0.996" if portfolio_asset.qty > 0 else "0.99") * qty * bid
         user.cash += value
 
         # Remove items from basket
-        portfolio_asset.qty -= form.trade_qty.data
+        portfolio_asset.qty -= qty
 
         # Update portfolio value
-        user.portfolio += form.trade_qty.data * (bid + Decimal("0.005")) - value
+        user.portfolio += value - qty * (bid + Decimal("0.005"))
+
+    # Check whether margin would exceed $22 million:
+    new_margin = 0
+    for k, v in portfolio_assets.iteritems():
+        if v.qty < 0 and k in asset_prices:
+            new_margin += asset_prices[k] * (-v.qty)
+
+    if new_margin > 22000000:
+        FLASHES.append(("error", "Margin can't exceed $22 million."))
+        return
+
+    # Check that user would have 30%+ of margin in cash
+    if new_margin > user.cash * Decimal("0.3"):
+        FLASHES.append(("error", "Margin can't exceed 30% of cash."))
+        return
 
     # Remove basket item if quantity is zero
     if portfolio_asset.qty == 0:
         db.session.delete(portfolio_asset)
 
     # Add transaction record
-    db.session.add(Transaction(date=LAST_WEEKDAY, user_id=session["user"], is_buy=is_buy, stock_id=stock_id, security=security, strike=strike, qty=form.trade_qty.data, value=value))
+    db.session.add(Transaction(date=TODAY, user_id=user.id, is_buy=is_buy, stock_id=stock_id, security=security, strike=strike, qty=qty, value=value))
 
     # Save to database
     db.session.commit()
