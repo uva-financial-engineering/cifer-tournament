@@ -276,7 +276,7 @@ def register(form):
         return
 
     if User.query.filter_by(email=form.reg_email.data.lower()).first():
-        FLASHES.append(("error", "That email is already taken"))
+        FLASHES.append(("error", "That email is already taken."))
         return
 
     if form.reg_algorithm.data == "yes":
