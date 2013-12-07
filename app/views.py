@@ -19,13 +19,13 @@ class Security:
     STOCK, CALL, PUT = range(3)
 
 class Status:
-    BEFORE, DURING, AFTER = False, True, False
+    BEFORE, DURING, AFTER = True, False, False
 
 RATE = Decimal("1.00002739763558")
 INITIAL_VALUE = Decimal("53724780")
 FLASHES = [] # (category, message) tuples
 
-TODAY = "2014-01-13"
+TODAY = "2014-01-12"
 CONTEST_FIRST_DAY = "2014-01-13"
 LAST_WEEKDAY = CONTEST_FIRST_DAY
 DAY_AFTER_CONTEST = "2014-02-19"
