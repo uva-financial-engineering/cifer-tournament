@@ -6,11 +6,11 @@ import time
 from datetime import date, timedelta
 from decimal import Decimal
 
-from flask import (render_template, flash, redirect, request, session,
+from flask import (g, render_template, flash, redirect, request, session,
     send_from_directory, url_for)
 
 from app import app, db
-from models import User, Stock, AssetPrice, PortfolioAsset, Terror, Transaction
+from models import Variable, User, Stock, AssetPrice, PortfolioAsset, Terror, Transaction
 from forms import RegForm, LoginForm, TradeForm
 
 # Constants
@@ -18,19 +18,21 @@ from forms import RegForm, LoginForm, TradeForm
 class Security:
     STOCK, CALL, PUT = range(3)
 
-class Status:
-    BEFORE, DURING, AFTER = True, False, False
-
 RATE = Decimal("1.00002739763558")
 INITIAL_VALUE = Decimal("53724780")
 FLASHES = [] # (category, message) tuples
 
-TODAY = "2014-01-12"
-CONTEST_FIRST_DAY = "2014-01-13"
-LAST_WEEKDAY = CONTEST_FIRST_DAY
-DAY_AFTER_CONTEST = "2014-02-19"
-
 # Routes
+
+@app.before_request
+def before_request():
+    variables = Variable.query.first()
+
+    g.status = variables.status
+    g.today = variables.today
+    g.contest_first_day = variables.contest_first_day
+    g.last_weekday = variables.last_weekday
+    g.day_after_contest = variables.day_after_contest
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -57,11 +59,10 @@ def index():
             trade(user, TradeForm(request.form))
         else:
             flash_all()
-            app.logger.debug(session["user"])
             return render_template("index.html",
                 user=user,
-                date=pretty_print(TODAY),
-                target=get_target() * RATE if Status.DURING else None,
+                date=pretty_print(g.today),
+                target=get_target() * RATE if g.status == "during" else None,
                 tradeform=TradeForm(request.form),
                 js=generate_js(session["user"]))
     else:
@@ -83,19 +84,19 @@ def index():
 def midnight():
     """Advances current date by 1 day (should be called at midnight UTC)."""
 
-    global TODAY, LAST_WEEKDAY
-
     # Calculate new date
-    yesterday = TODAY
-    TODAY = day_after(TODAY)
+    yesterday = g.today
+    g.today = day_after(g.today)
+    variables = Variable.query.first()
+    variables.today = g.today
 
-    if Status.BEFORE:
-        if TODAY == CONTEST_FIRST_DAY:
-            Status.BEFORE, Status.DURING = False, True
+    if g.status == "before":
+        if g.today == g.contest_first_day:
+            variables.status = "during"
 
-    elif Status.DURING:
-        if TODAY == DAY_AFTER_CONTEST:
-            Status.DURING, Status.AFTER = False, True
+    elif g.status == "during":
+        if g.today == g.day_after_contest:
+            variables.status = "after"
 
         # Add interest to cash, then record it
         portfolio_values = dict()
@@ -106,12 +107,13 @@ def midnight():
             portfolio_values[user.id] = user.cash
 
         # Calculate most recent weekday
-        asset_prices = dict(((a.stock_id, a.security, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=TODAY).all())
+        asset_prices = dict(((a.stock_id, a.security, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=g.today).all())
 
         if len(asset_prices):
-            LAST_WEEKDAY = TODAY
+            g.last_weekday = g.today
+            variables.last_weekday = g.last_weekday
         else:
-            asset_prices = dict(((a.stock_id, a.security, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=LAST_WEEKDAY).all())
+            asset_prices = dict(((a.stock_id, a.security, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=g.last_weekday).all())
 
         # Add value of basket items
         for portfolio_asset in PortfolioAsset.query.all():
@@ -124,11 +126,10 @@ def midnight():
             users[user].portfolio = value
             terror = target - value if value < target else (value - target) * Decimal("0.5")
             db.session.add(Terror(yesterday, user, terror))
-
-        db.session.commit()
     else:
         pass
 
+    db.session.commit()
     return "0"
 
 @app.route("/ping")
@@ -145,11 +146,11 @@ def favicon():
 def trade(user, form):
     global FLASHES
 
-    if Status.BEFORE:
-        FLASHES.append(("error", "Contest begins on " + pretty_print(CONTEST_FIRST_DAY) + "."))
+    if g.status == "before":
+        FLASHES.append(("error", "Contest begins on " + pretty_print(g.contest_first_day) + "."))
         return
 
-    if Status.AFTER:
+    if g.status == "after":
         FLASHES.append(("error", "Contest is over."))
         return
 
@@ -158,7 +159,7 @@ def trade(user, form):
         return
 
     # Check that market is open
-    if TODAY != LAST_WEEKDAY:
+    if g.today != g.last_weekday:
         FLASHES.append(("error", "The market is closed today."))
         return
 
@@ -168,11 +169,11 @@ def trade(user, form):
     asset_key = (stock_id, security, strike)
 
     # Check that user didn't already trade asset today
-    if asset_key in [(t.stock_id, t.security, t.strike) for t in Transaction.query.filter_by(user_id=user.id, date=TODAY).all()]:
+    if asset_key in [(t.stock_id, t.security, t.strike) for t in Transaction.query.filter_by(user_id=user.id, date=g.today).all()]:
         FLASHES.append(("error", "You can't trade the same asset multiple times in the same day."))
         return
 
-    asset_prices = dict(((a.stock_id, a.security, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=TODAY).all())
+    asset_prices = dict(((a.stock_id, a.security, a.strike), a.bid + Decimal("0.005")) for a in AssetPrice.query.filter_by(date=g.today).all())
 
     # Check that asset is tradable today and has nonzero value
     if asset_key not in asset_prices:
@@ -204,7 +205,7 @@ def trade(user, form):
 
     if is_buy:
         # Subtract from cash
-        ask = AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=TODAY).first().ask
+        ask = AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=g.today).first().ask
         value = Decimal("1.004") * qty * ask
         user.cash -= value
 
@@ -220,7 +221,7 @@ def trade(user, form):
         user.portfolio += qty * (ask - Decimal("0.005")) - value
     else:
         # Add to cash
-        bid = AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=TODAY).first().bid
+        bid = AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=g.today).first().bid
         value = Decimal("0.996" if portfolio_asset.qty > 0 else "0.99") * qty * bid
         user.cash += value
 
@@ -250,7 +251,7 @@ def trade(user, form):
         db.session.delete(portfolio_asset)
 
     # Add transaction record
-    db.session.add(Transaction(date=TODAY, user_id=user.id, is_buy=is_buy, stock_id=stock_id, security=security, strike=strike, qty=qty, value=value))
+    db.session.add(Transaction(date=g.today, user_id=user.id, is_buy=is_buy, stock_id=stock_id, security=security, strike=strike, qty=qty, value=value))
 
     # Save to database
     db.session.commit()
@@ -304,7 +305,7 @@ def generate_js(user):
     js = ""
 
     authenticated = user > 0
-    asset_prices = AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all()
+    asset_prices = AssetPrice.query.filter_by(date=g.last_weekday).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all()
 
     if authenticated:
         # Build portfolio table
@@ -323,10 +324,10 @@ def generate_js(user):
         for t in Terror.query.filter_by(user_id=user).order_by(Terror.date).all():
             terror_dict[t.date.strftime("%Y-%m-%d")] = int(t.terror)
 
-        day = CONTEST_FIRST_DAY
+        day = g.contest_first_day
         i = 0
         cum_error = 0
-        while day != DAY_AFTER_CONTEST:
+        while day != g.day_after_contest:
             terrors[0].append(i)
             terrors[1].append(pretty_print(day))
 
@@ -340,7 +341,7 @@ def generate_js(user):
             i += 1
 
         # Get transaction history for today
-        transactions = [[1 if t.is_buy else 0, t.stock_id, t.security, str(t.strike), int(t.qty), "%.2f" % float(t.value)] for t in Transaction.query.filter_by(user_id=user, date=TODAY).all()]
+        transactions = [[1 if t.is_buy else 0, t.stock_id, t.security, str(t.strike), int(t.qty), "%.2f" % float(t.value)] for t in Transaction.query.filter_by(user_id=user, date=g.today).all()]
 
         js = "CUMTERROR=" + str(cum_error) + ";TERRORS=" + str(terrors) + ";TRANSACTIONS=" + str(transactions) + ";PORTFOLIO=" + str(portfolio) + ";"
 
@@ -396,7 +397,7 @@ def create_portfolio(user, user_id):
         (17, 0, -1, 52000)]
     db.session.add_all([PortfolioAsset(user_id, a[0], a[1], a[2], a[3], False) for a in portfolio_assets])
 
-    asset_bids = dict(((a.stock_id, a.security, a.strike), a.bid) for a in AssetPrice.query.filter_by(date=LAST_WEEKDAY).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all())
+    asset_bids = dict(((a.stock_id, a.security, a.strike), a.bid) for a in AssetPrice.query.filter_by(date=g.last_weekday).order_by(AssetPrice.security, AssetPrice.stock_id, AssetPrice.strike).all())
     portfolio_value = 18000000
     for a in portfolio_assets:
         if (a[0], a[1], a[2]) in asset_bids:
@@ -407,10 +408,10 @@ def pretty_print(datetext):
     return time.strftime("%d %B", time.strptime(datetext, "%Y-%m-%d"))
 
 def get_target():
-    if Status.DURING:
-        day = CONTEST_FIRST_DAY
+    if g.status == "during":
+        day = g.contest_first_day
         power = 0
-        while day != TODAY:
+        while day != g.today:
             power += 1
             day = day_after(day)
         return INITIAL_VALUE * (RATE ** power)

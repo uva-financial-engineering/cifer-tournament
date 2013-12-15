@@ -2,6 +2,16 @@ from werkzeug import generate_password_hash, check_password_hash
 
 from app import db
 
+class Variable(db.Model):
+    __tablename__ = "variables"
+
+    id = db.Column(db.Integer, primary_key=True)
+    status = db.Column(db.Text)
+    today = db.Column(db.Text)
+    contest_first_day = db.Column(db.Text)
+    last_weekday = db.Column(db.Text)
+    day_after_contest = db.Column(db.Text)
+
 class User(db.Model):
     __tablename__ = "users"
 

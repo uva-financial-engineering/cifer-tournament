@@ -3,6 +3,19 @@
 import os
 import sys
 
+variables_sql = """DROP TABLE IF EXISTS variables;
+CREATE TABLE variables (
+  id serial NOT NULL,
+  status text NOT NULL,
+  today text NOT NULL,
+  contest_first_day text NOT NULL,
+  last_weekday text NOT NULL,
+  day_after_contest text NOT NULL,
+  CONSTRAINT variables_pkey PRIMARY KEY (id)
+) WITH (OIDS=FALSE);
+INSERT INTO variables (status, today, contest_first_day, last_weekday, day_after_contest)
+VALUES ('during', '2014-01-13', '2014-01-13', '2014-01-13', '2014-02-19');"""
+
 users_sql = """DROP TABLE IF EXISTS users;
 CREATE TABLE users (
   id serial NOT NULL,
@@ -12,7 +25,7 @@ CREATE TABLE users (
   last_name text NOT NULL,
   institution text NOT NULL,
   cash numeric NOT NULL,
-  portfolio numeric NOT NULL,
+  portfolio numeric,
   algorithm boolean,
   CONSTRAINT users_pkey PRIMARY KEY (id)
 ) WITH (OIDS=FALSE);"""
@@ -133,7 +146,9 @@ if __name__ == "__main__":
     # Write to SQL file
 
     with open("database.sql", "w") as f:
-        f.write(users_sql +
+        f.write(
+            variables_sql +
+            users_sql +
             transactions_sql +
             terrors_sql +
             portfolio_assets_sql +
