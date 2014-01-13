@@ -14,7 +14,7 @@ CREATE TABLE variables (
   CONSTRAINT variables_pkey PRIMARY KEY (id)
 ) WITH (OIDS=FALSE);
 INSERT INTO variables (status, today, contest_first_day, last_weekday, day_after_contest)
-VALUES ('during', '2014-01-13', '2014-01-13', '2014-01-13', '2014-02-19');"""
+VALUES ('during', '2014-01-13', '2014-01-13', '2014-01-13', '2014-02-22');"""
 
 users_sql = """DROP TABLE IF EXISTS users;
 CREATE TABLE users (
@@ -124,11 +124,8 @@ if __name__ == "__main__":
 
     for line in iterlines:
         pieces = line.strip().split(",")
-        date = pieces[0].split("/")
-        date[0] = "%02d" % int(date[0])
-        date[1] = "%02d" % int(date[1])
 
-        asset_prices_sql += "('%s', %d, 0, -1, %s, %s), " % ("-".join([date[2], date[0], date[1]]), stocks[pieces[1]][0], "%.2f" % float(pieces[3]), "%.2f" % float(pieces[4]))
+        asset_prices_sql += "('%s', %d, 0, -1, %s, %s), " % (pieces[0], stocks[pieces[1]][0], "%.2f" % float(pieces[3]), "%.2f" % float(pieces[4]))
 
     # Options
 
@@ -137,11 +134,8 @@ if __name__ == "__main__":
 
     for line in iterlines:
         pieces = line.strip().split(",")
-        date = pieces[0].split("/")
-        date[0] = "%02d" % int(date[0])
-        date[1] = "%02d" % int(date[1])
 
-        asset_prices_sql += "('%s', %d, %s, %s, %s, %s), " % ("-".join([date[2], date[0], date[1]]), stocks[pieces[2]][0], "1" if pieces[3] == "Call" else "2", pieces[4], "%.2f" % float(pieces[5]), "%.2f" % float(pieces[6]))
+        asset_prices_sql += "('%s', %d, %s, %s, %s, %s), " % (pieces[0], stocks[pieces[2]][0], "1" if pieces[3] == "Call" else "2", pieces[4], "%.2f" % float(pieces[5]), "%.2f" % float(pieces[6]))
 
     # Write to SQL file
 

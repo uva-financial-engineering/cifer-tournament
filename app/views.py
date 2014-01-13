@@ -38,13 +38,13 @@ def before_request():
 def index():
     """Main page that serves as both login screen and app screen."""
 
-    # Create debug user if no users exist
+    # Create user portfolios
     if not User.query.all():
-        new_user = User("a@a.com", "a", "John", "Doe", "University of Virginia", True)
-        db.session.add(new_user)
-        create_portfolio(new_user, 1)
-        db.session.commit()
-        session["user"] = 1
+        for i in xrange(16)
+            new_user = User("a@a.com", "a", "John", "Doe", "University of Virginia", True)
+            db.session.add(new_user)
+            create_portfolio(new_user, i + 1)
+            db.session.commit()
 
     # Identifies which form (if any) was submitted
     action = request.form["action"] if request.method == "POST" else None
