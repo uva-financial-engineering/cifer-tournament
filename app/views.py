@@ -19,7 +19,7 @@ class Security:
     STOCK, CALL, PUT = range(3)
 
 RATE = Decimal("1.00002739763558")
-INITIAL_VALUE = Decimal("53724780")
+INITIAL_VALUE = Decimal("53709280")
 FLASHES = [] # (category, message) tuples
 
 # Routes
@@ -40,7 +40,7 @@ def index():
 
     # Create user portfolios
     if not User.query.all():
-        for i in xrange(16)
+        for i in xrange(16):
             new_user = User("a@a.com", "a", "John", "Doe", "University of Virginia", True)
             db.session.add(new_user)
             create_portfolio(new_user, i + 1)
