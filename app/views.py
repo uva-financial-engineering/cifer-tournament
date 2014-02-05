@@ -242,8 +242,8 @@ def trade(user, form):
         return
 
     # Check that user would have 30%+ of margin in cash
-    if new_margin > user.cash * Decimal("0.3"):
-        FLASHES.append(("error", "Margin can't exceed 30% of cash."))
+    if new_margin * Decimal("0.3") > user.cash:
+        FLASHES.append(("error", "Held cash must exceed 30% of short sold assets' value."))
         return
 
     # Remove basket item if quantity is zero
