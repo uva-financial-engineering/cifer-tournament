@@ -197,12 +197,6 @@ def trade(user, form):
     qty = form.trade_qty.data
     is_buy = form.trade_position.data == "buy"
 
-    # Check that sell/shortsell doesn't cross over 0
-    if (not is_buy) and portfolio_asset.qty > 0 and qty > portfolio_asset.qty:
-        FLASHES.append(("error", "You can't switch from a long position to a short one in the same day."))
-        return
-
-
     if is_buy:
         # Subtract from cash
         ask = AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=g.today).first().ask
@@ -220,6 +214,11 @@ def trade(user, form):
         # Update portfolio value
         user.portfolio += qty * (ask - Decimal("0.005")) - value
     else:
+        # Check that sell doesn't cause quantity to cross over 0
+        if portfolio_asset.qty > 0 and qty > portfolio_asset.qty:
+            FLASHES.append(("error", "You can't switch from a long position to a short one in the same day."))
+            return
+
         # Add to cash
         bid = AssetPrice.query.filter_by(stock_id=stock_id, security=security, strike=strike, date=g.today).first().bid
         value = Decimal("0.996" if portfolio_asset.qty > 0 else "0.99") * qty * bid
@@ -237,12 +236,12 @@ def trade(user, form):
         if v.qty < 0 and k in asset_prices:
             new_margin += asset_prices[k] * (-v.qty)
 
-    if new_margin > 22000000:
+    if new_margin > 22000000 and (not is_buy) and portfolio_asset.qty < 0:
         FLASHES.append(("error", "Margin can't exceed $22 million."))
         return
 
     # Check that user would have 30%+ of margin in cash
-    if new_margin * Decimal("0.3") > user.cash:
+    if new_margin * Decimal("0.3") > user.cash and (is_buy or portfolio_asset.qty < 0):
         FLASHES.append(("error", "Held cash must exceed 30% of short sold assets' value."))
         return
 
